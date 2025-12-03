@@ -1,13 +1,30 @@
-// Update this page (the content is just a fallback if you fail to update the page)
+import Navbar from "@/components/layout/Navbar";
+import Footer from "@/components/layout/Footer";
+import HeroSection from "@/components/landing/HeroSection";
+import HowItWorks from "@/components/landing/HowItWorks";
+import PricingSection from "@/components/landing/PricingSection";
+import PartnersSection from "@/components/landing/PartnersSection";
+import { Helmet } from "react-helmet-async";
 
 const Index = () => {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background">
-      <div className="text-center">
-        <h1 className="mb-4 text-4xl font-bold">Welcome to Your Blank App</h1>
-        <p className="text-xl text-muted-foreground">Start building your amazing project here!</p>
+    <>
+      <Helmet>
+        <title>HojiVirtual - O Seu Mercado Online em Angola</title>
+        <meta name="description" content="Compre e venda produtos locais de forma segura no mercado Hoji Ya Henda digital. A plataforma líder de comércio informal em Angola." />
+      </Helmet>
+      
+      <div className="min-h-screen bg-background">
+        <Navbar />
+        <main>
+          <HeroSection />
+          <HowItWorks />
+          <PricingSection />
+          <PartnersSection />
+        </main>
+        <Footer />
       </div>
-    </div>
+    </>
   );
 };
 
