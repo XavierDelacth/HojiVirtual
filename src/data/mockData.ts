@@ -116,7 +116,7 @@ export const stores: Store[] = [
 export const products: Product[] = [
   {
     id: "1",
-    name: "Vestido Floral Azul",
+    name: "Vestido Floral Vermelho",
     description: "Vestido elegante com estampa floral, perfeito para ocasiões especiais. Tecido leve e confortável.",
     price: 8500,
     stock: 15,
@@ -144,8 +144,8 @@ export const products: Product[] = [
   },
   {
     id: "3",
-    name: "Fubá de Milho 1kg",
-    description: "Fubá de milho de alta qualidade, ideal para preparar funge e outras receitas tradicionais.",
+    name: "Arroz Nossa Casa 1kg",
+    description: "Arroz de alta qualidade, ideal para acompanhar qualquer refeição tradicional.",
     price: 1200,
     stock: 50,
     storeId: "3",
@@ -186,7 +186,7 @@ export const products: Product[] = [
   },
   {
     id: "6",
-    name: "Camisa Social Branca",
+    name: "Camisa Social Azul",
     description: "Camisa social masculina de algodão premium. Corte clássico e elegante.",
     price: 6500,
     stock: 20,
@@ -242,8 +242,8 @@ export const products: Product[] = [
   },
   {
     id: "10",
-    name: "Feijão Manteiga 1kg",
-    description: "Feijão manteiga de primeira qualidade, perfeito para caldeirada e muamba.",
+    name: "Pasta 1kg",
+    description: "Pasta de primeira qualidade, perfeita para qualquer refeição.",
     price: 1800,
     stock: 35,
     storeId: "3",

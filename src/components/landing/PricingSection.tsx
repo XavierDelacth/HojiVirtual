@@ -14,8 +14,8 @@ const PricingSection = () => {
     },
     {
       icon: TrendingUp,
-      title: "Comissão Baixa",
-      description: "Apenas 3% a 5% por transação concluída"
+      title: "Comissão Justa",
+      description: "Apenas 10% a 12% por transação concluída"
     },
     {
       icon: CheckCircle,
@@ -46,7 +46,7 @@ const PricingSection = () => {
               </div>
               <CardTitle className="text-2xl mb-2">Comissão por Venda</CardTitle>
               <div className="mt-4">
-                <span className="text-5xl font-bold text-gradient">3% - 5%</span>
+                <span className="text-5xl font-bold text-gradient">10% - 12%</span>
                 <span className="text-muted-foreground ml-2">por transação</span>
               </div>
             </CardHeader>
@@ -61,15 +61,15 @@ const PricingSection = () => {
               <div className="grid md:grid-cols-2 gap-4 mb-8">
                 <div className="flex items-center gap-3 p-4 rounded-lg bg-accent/5">
                   <CheckCircle className="w-5 h-5 text-accent flex-shrink-0" />
-                  <span className="text-sm">Vendas até 10.000 Kz: 5% de comissão</span>
+                  <span className="text-sm">Vendas até 10.000 Kz: 12% de comissão</span>
                 </div>
                 <div className="flex items-center gap-3 p-4 rounded-lg bg-accent/5">
                   <CheckCircle className="w-5 h-5 text-accent flex-shrink-0" />
-                  <span className="text-sm">Vendas de 10.001 a 50.000 Kz: 4% de comissão</span>
+                  <span className="text-sm">Vendas de 10.001 a 50.000 Kz: 11% de comissão</span>
                 </div>
                 <div className="flex items-center gap-3 p-4 rounded-lg bg-accent/5">
                   <CheckCircle className="w-5 h-5 text-accent flex-shrink-0" />
-                  <span className="text-sm">Vendas acima de 50.000 Kz: 3% de comissão</span>
+                  <span className="text-sm">Vendas acima de 50.000 Kz: 10% de comissão</span>
                 </div>
                 <div className="flex items-center gap-3 p-4 rounded-lg bg-accent/5">
                   <CheckCircle className="w-5 h-5 text-accent flex-shrink-0" />
