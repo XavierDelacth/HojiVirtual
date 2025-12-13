@@ -1,11 +1,26 @@
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
-import { Menu, X, ShoppingBag, User, Bell } from "lucide-react";
+import { Link, useNavigate, useLocation } from "react-router-dom";
+import { Menu, X, ShoppingBag } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
+
+  const scrollToSection = (sectionId: string) => {
+    if (location.pathname !== "/") {
+      navigate("/");
+      setTimeout(() => {
+        const element = document.getElementById(sectionId);
+        element?.scrollIntoView({ behavior: "smooth" });
+      }, 100);
+    } else {
+      const element = document.getElementById(sectionId);
+      element?.scrollIntoView({ behavior: "smooth" });
+    }
+    setIsOpen(false);
+  };
 
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 bg-card/95 backdrop-blur-md shadow-sm border-b border-border">
@@ -24,12 +39,18 @@ const Navbar = () => {
             <Link to="/explorar" className="text-foreground/80 hover:text-primary transition-colors font-medium">
               Explorar
             </Link>
-            <Link to="/como-funciona" className="text-foreground/80 hover:text-primary transition-colors font-medium">
+            <button 
+              onClick={() => scrollToSection("como-funciona")}
+              className="text-foreground/80 hover:text-primary transition-colors font-medium"
+            >
               Como Funciona
-            </Link>
-            <Link to="/planos" className="text-foreground/80 hover:text-primary transition-colors font-medium">
-              Planos
-            </Link>
+            </button>
+            <button 
+              onClick={() => scrollToSection("modelo-comissoes")}
+              className="text-foreground/80 hover:text-primary transition-colors font-medium"
+            >
+              Modelo de Comissões
+            </button>
           </div>
 
           {/* Desktop Actions */}
@@ -62,20 +83,18 @@ const Navbar = () => {
               >
                 Explorar
               </Link>
-              <Link 
-                to="/como-funciona" 
-                className="px-4 py-2 hover:bg-muted rounded-lg transition-colors"
-                onClick={() => setIsOpen(false)}
+              <button 
+                onClick={() => scrollToSection("como-funciona")}
+                className="px-4 py-2 hover:bg-muted rounded-lg transition-colors text-left"
               >
                 Como Funciona
-              </Link>
-              <Link 
-                to="/planos" 
-                className="px-4 py-2 hover:bg-muted rounded-lg transition-colors"
-                onClick={() => setIsOpen(false)}
+              </button>
+              <button 
+                onClick={() => scrollToSection("modelo-comissoes")}
+                className="px-4 py-2 hover:bg-muted rounded-lg transition-colors text-left"
               >
-                Planos
-              </Link>
+                Modelo de Comissões
+              </button>
               <div className="border-t border-border pt-3 mt-2 flex flex-col gap-2">
                 <Button variant="ghost" className="w-full justify-center" onClick={() => navigate("/login")}>
                   Entrar
