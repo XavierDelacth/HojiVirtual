@@ -1,9 +1,13 @@
+import { useState } from "react";
 import { Helmet } from "react-helmet-async";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import DashboardSidebar from "@/components/dashboard/DashboardSidebar";
+import EditProfileModal from "@/components/dashboard/EditProfileModal";
+import AddProductModal from "@/components/dashboard/AddProductModal";
+import { toast } from "sonner";
 import { 
   Store, 
   MapPin, 
@@ -17,11 +21,14 @@ import {
   ShoppingCart,
   Users,
   BarChart3,
-  Edit
+  Edit,
+  Plus
 } from "lucide-react";
 import { products } from "@/data/mockData";
 
 const MinhaLinha = () => {
+  const [editProfileOpen, setEditProfileOpen] = useState(false);
+  const [addProductOpen, setAddProductOpen] = useState(false);
   // Mock store data
   const storeData = {
     name: "Loja da Maria",
@@ -73,7 +80,7 @@ const MinhaLinha = () => {
               <h1 className="text-2xl sm:text-3xl font-bold text-foreground">Minha Linha</h1>
               <p className="text-muted-foreground">Gerencie sua loja, produtos e acompanhe suas vendas</p>
             </div>
-            <Button className="bg-primary hover:bg-primary/90">
+            <Button className="bg-primary hover:bg-primary/90" onClick={() => setEditProfileOpen(true)}>
               <Edit className="w-4 h-4 mr-2" />
               Editar Perfil
             </Button>
@@ -172,8 +179,8 @@ const MinhaLinha = () => {
             <TabsContent value="produtos" className="space-y-6 animate-fade-in">
               <div className="flex items-center justify-between">
                 <h2 className="text-lg font-semibold">Meus Produtos ({products.length})</h2>
-                <Button variant="outline">
-                  <Package className="w-4 h-4 mr-2" />
+                <Button variant="outline" onClick={() => setAddProductOpen(true)}>
+                  <Plus className="w-4 h-4 mr-2" />
                   Adicionar Produto
                 </Button>
               </div>
@@ -330,6 +337,24 @@ const MinhaLinha = () => {
           </Tabs>
         </div>
       </main>
+
+      {/* Modals */}
+      <EditProfileModal
+        open={editProfileOpen}
+        onOpenChange={setEditProfileOpen}
+        storeData={storeData}
+        onSave={(data) => {
+          toast.success("Perfil atualizado com sucesso!");
+        }}
+      />
+
+      <AddProductModal
+        open={addProductOpen}
+        onOpenChange={setAddProductOpen}
+        onAdd={(product) => {
+          toast.success(`Produto "${product.name}" adicionado com sucesso!`);
+        }}
+      />
     </div>
   );
 };
