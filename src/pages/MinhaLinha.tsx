@@ -1,0 +1,337 @@
+import { Helmet } from "react-helmet-async";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import DashboardSidebar from "@/components/dashboard/DashboardSidebar";
+import { 
+  Store, 
+  MapPin, 
+  Clock, 
+  Phone, 
+  Mail, 
+  Star, 
+  Package, 
+  TrendingUp, 
+  DollarSign,
+  ShoppingCart,
+  Users,
+  BarChart3,
+  Edit
+} from "lucide-react";
+import { products } from "@/data/mockData";
+
+const MinhaLinha = () => {
+  // Mock store data
+  const storeData = {
+    name: "Loja da Maria",
+    description: "Vendedora especializada em vestuário feminino e produtos alimentares de qualidade. Presente no mercado Hoji Ya Henda há mais de 5 anos.",
+    location: "Mercado Hoji Ya Henda, Banca 45",
+    phone: "+244 923 456 789",
+    email: "maria.loja@email.com",
+    hours: "08:00 - 18:00",
+    rating: 4.8,
+    totalSales: 1250,
+    totalRevenue: 2850000,
+    verified: true
+  };
+
+  // Mock statistics
+  const stats = {
+    totalProducts: 24,
+    activeSales: 8,
+    monthlyRevenue: 450000,
+    monthlyOrders: 67,
+    avgRating: 4.8,
+    totalCustomers: 312
+  };
+
+  // Mock sales data for chart representation
+  const recentSales = [
+    { month: "Jan", value: 320000 },
+    { month: "Fev", value: 380000 },
+    { month: "Mar", value: 420000 },
+    { month: "Abr", value: 390000 },
+    { month: "Mai", value: 450000 },
+    { month: "Jun", value: 480000 }
+  ];
+
+  return (
+    <div className="flex min-h-screen bg-background">
+      <Helmet>
+        <title>Minha Linha | HojiVirtual</title>
+        <meta name="description" content="Gerencie sua loja, produtos e estatísticas de vendas no HojiVirtual" />
+      </Helmet>
+
+      <DashboardSidebar />
+
+      <main className="flex-1 p-6 lg:p-8 overflow-auto">
+        <div className="max-w-7xl mx-auto space-y-6">
+          {/* Header */}
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div>
+              <h1 className="text-2xl sm:text-3xl font-bold text-foreground">Minha Linha</h1>
+              <p className="text-muted-foreground">Gerencie sua loja, produtos e acompanhe suas vendas</p>
+            </div>
+            <Button className="bg-primary hover:bg-primary/90">
+              <Edit className="w-4 h-4 mr-2" />
+              Editar Perfil
+            </Button>
+          </div>
+
+          <Tabs defaultValue="perfil" className="space-y-6">
+            <TabsList className="grid w-full grid-cols-3 lg:w-auto lg:inline-flex">
+              <TabsTrigger value="perfil">Perfil da Loja</TabsTrigger>
+              <TabsTrigger value="produtos">Linha de Produtos</TabsTrigger>
+              <TabsTrigger value="estatisticas">Estatísticas</TabsTrigger>
+            </TabsList>
+
+            {/* Perfil da Loja */}
+            <TabsContent value="perfil" className="space-y-6 animate-fade-in">
+              <Card>
+                <CardHeader>
+                  <div className="flex items-start justify-between">
+                    <div className="flex items-center gap-4">
+                      <div className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center">
+                        <Store className="w-10 h-10 text-primary" />
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <CardTitle className="text-xl">{storeData.name}</CardTitle>
+                          {storeData.verified && (
+                            <Badge className="bg-green-500 hover:bg-green-600">Verificado</Badge>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-1 mt-1">
+                          <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
+                          <span className="font-medium">{storeData.rating}</span>
+                          <span className="text-muted-foreground">({storeData.totalSales} vendas)</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  <p className="text-muted-foreground">{storeData.description}</p>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="flex items-center gap-3 p-4 bg-muted/50 rounded-lg">
+                      <MapPin className="w-5 h-5 text-primary" />
+                      <div>
+                        <p className="text-sm text-muted-foreground">Localização</p>
+                        <p className="font-medium">{storeData.location}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3 p-4 bg-muted/50 rounded-lg">
+                      <Clock className="w-5 h-5 text-primary" />
+                      <div>
+                        <p className="text-sm text-muted-foreground">Horário</p>
+                        <p className="font-medium">{storeData.hours}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3 p-4 bg-muted/50 rounded-lg">
+                      <Phone className="w-5 h-5 text-primary" />
+                      <div>
+                        <p className="text-sm text-muted-foreground">Telefone</p>
+                        <p className="font-medium">{storeData.phone}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3 p-4 bg-muted/50 rounded-lg">
+                      <Mail className="w-5 h-5 text-primary" />
+                      <div>
+                        <p className="text-sm text-muted-foreground">Email</p>
+                        <p className="font-medium">{storeData.email}</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Quick Stats */}
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 pt-4 border-t">
+                    <div className="text-center">
+                      <p className="text-2xl font-bold text-primary">{stats.totalProducts}</p>
+                      <p className="text-sm text-muted-foreground">Produtos</p>
+                    </div>
+                    <div className="text-center">
+                      <p className="text-2xl font-bold text-green-500">{storeData.totalSales}</p>
+                      <p className="text-sm text-muted-foreground">Vendas Totais</p>
+                    </div>
+                    <div className="text-center">
+                      <p className="text-2xl font-bold text-blue-500">{stats.totalCustomers}</p>
+                      <p className="text-sm text-muted-foreground">Clientes</p>
+                    </div>
+                    <div className="text-center">
+                      <p className="text-2xl font-bold text-yellow-500">{storeData.rating}</p>
+                      <p className="text-sm text-muted-foreground">Avaliação</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            {/* Linha de Produtos */}
+            <TabsContent value="produtos" className="space-y-6 animate-fade-in">
+              <div className="flex items-center justify-between">
+                <h2 className="text-lg font-semibold">Meus Produtos ({products.length})</h2>
+                <Button variant="outline">
+                  <Package className="w-4 h-4 mr-2" />
+                  Adicionar Produto
+                </Button>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                {products.map((product) => (
+                  <Card key={product.id} className="overflow-hidden hover:shadow-lg transition-shadow">
+                    <div className="aspect-square bg-muted relative">
+                      <img 
+                        src={product.images[0]} 
+                        alt={product.name}
+                        className="w-full h-full object-cover"
+                      />
+                      <Badge className="absolute top-2 right-2 bg-background/80 text-foreground">
+                        {product.category}
+                      </Badge>
+                    </div>
+                    <CardContent className="p-4">
+                      <h3 className="font-medium truncate">{product.name}</h3>
+                      <p className="text-lg font-bold text-primary mt-1">
+                        {product.price.toLocaleString('pt-AO')} Kz
+                      </p>
+                      <div className="flex items-center gap-1 mt-2">
+                        <Star className="w-3 h-3 fill-yellow-400 text-yellow-400" />
+                        <span className="text-sm">{product.rating}</span>
+                        <span className="text-xs text-muted-foreground">({product.reviewCount} avaliações)</span>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </TabsContent>
+
+            {/* Estatísticas */}
+            <TabsContent value="estatisticas" className="space-y-6 animate-fade-in">
+              {/* Stats Cards */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <Card>
+                  <CardContent className="p-6">
+                    <div className="flex items-center gap-4">
+                      <div className="p-3 bg-primary/10 rounded-full">
+                        <DollarSign className="w-6 h-6 text-primary" />
+                      </div>
+                      <div>
+                        <p className="text-sm text-muted-foreground">Receita Mensal</p>
+                        <p className="text-2xl font-bold">{stats.monthlyRevenue.toLocaleString('pt-AO')} Kz</p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardContent className="p-6">
+                    <div className="flex items-center gap-4">
+                      <div className="p-3 bg-green-500/10 rounded-full">
+                        <ShoppingCart className="w-6 h-6 text-green-500" />
+                      </div>
+                      <div>
+                        <p className="text-sm text-muted-foreground">Pedidos do Mês</p>
+                        <p className="text-2xl font-bold">{stats.monthlyOrders}</p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardContent className="p-6">
+                    <div className="flex items-center gap-4">
+                      <div className="p-3 bg-blue-500/10 rounded-full">
+                        <Users className="w-6 h-6 text-blue-500" />
+                      </div>
+                      <div>
+                        <p className="text-sm text-muted-foreground">Total Clientes</p>
+                        <p className="text-2xl font-bold">{stats.totalCustomers}</p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardContent className="p-6">
+                    <div className="flex items-center gap-4">
+                      <div className="p-3 bg-yellow-500/10 rounded-full">
+                        <Star className="w-6 h-6 text-yellow-500" />
+                      </div>
+                      <div>
+                        <p className="text-sm text-muted-foreground">Avaliação Média</p>
+                        <p className="text-2xl font-bold">{stats.avgRating}</p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* Sales Chart */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <BarChart3 className="w-5 h-5" />
+                    Evolução de Vendas (Últimos 6 meses)
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="h-64 flex items-end justify-between gap-2 px-4">
+                    {recentSales.map((sale, index) => {
+                      const maxValue = Math.max(...recentSales.map(s => s.value));
+                      const height = (sale.value / maxValue) * 100;
+                      return (
+                        <div key={sale.month} className="flex-1 flex flex-col items-center gap-2">
+                          <div 
+                            className="w-full bg-primary/80 rounded-t-md transition-all hover:bg-primary"
+                            style={{ height: `${height}%` }}
+                          />
+                          <span className="text-xs text-muted-foreground">{sale.month}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Top Products */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <TrendingUp className="w-5 h-5" />
+                    Produtos Mais Vendidos
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    {products.slice(0, 5).map((product, index) => (
+                      <div key={product.id} className="flex items-center gap-4 p-3 bg-muted/50 rounded-lg">
+                        <span className="text-lg font-bold text-muted-foreground w-6">#{index + 1}</span>
+                        <img 
+                          src={product.images[0]} 
+                          alt={product.name}
+                          className="w-12 h-12 rounded-md object-cover"
+                        />
+                        <div className="flex-1">
+                          <p className="font-medium">{product.name}</p>
+                          <p className="text-sm text-muted-foreground">{product.category}</p>
+                        </div>
+                        <div className="text-right">
+                          <p className="font-bold text-primary">{product.price.toLocaleString('pt-AO')} Kz</p>
+                          <p className="text-xs text-muted-foreground">{Math.floor(Math.random() * 50) + 10} vendas</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+          </Tabs>
+        </div>
+      </main>
+    </div>
+  );
+};
+
+export default MinhaLinha;
