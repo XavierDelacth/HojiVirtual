@@ -13,6 +13,7 @@ import Dashboard from "./pages/Dashboard";
 import DashboardProducts from "./pages/DashboardProducts";
 import DashboardGamification from "./pages/DashboardGamification";
 import MinhaLinha from "./pages/MinhaLinha";
+import QRCodes from "./pages/QRCodes";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -34,6 +35,7 @@ const App = () => (
             <Route path="/dashboard/produtos" element={<DashboardProducts />} />
             <Route path="/dashboard/gamificacao" element={<DashboardGamification />} />
             <Route path="/dashboard/minha-linha" element={<MinhaLinha />} />
+            <Route path="/dashboard/qrcodes" element={<QRCodes />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
