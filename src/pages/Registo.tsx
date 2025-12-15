@@ -14,24 +14,17 @@ const Registo = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [formData, setFormData] = useState({
-    name: "",
-    email: "",
-    phone: "",
-    password: "",
-    confirmPassword: "",
-    acceptTerms: false,
-  });
-
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
-  };
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [acceptTerms, setAcceptTerms] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent, type: 'vendor' | 'buyer') => {
     e.preventDefault();
     
-    if (formData.password !== formData.confirmPassword) {
+    if (password !== confirmPassword) {
       toast({
         title: "Erro",
         description: "As palavras-passe não coincidem",
@@ -40,7 +33,7 @@ const Registo = () => {
       return;
     }
 
-    if (!formData.acceptTerms) {
+    if (!acceptTerms) {
       toast({
         title: "Erro",
         description: "Deve aceitar os termos de uso",
@@ -51,7 +44,6 @@ const Registo = () => {
 
     setIsLoading(true);
     
-    // Simulate registration
     setTimeout(() => {
       setIsLoading(false);
       toast({
@@ -63,120 +55,6 @@ const Registo = () => {
       navigate(type === 'vendor' ? "/dashboard" : "/explorar");
     }, 1000);
   };
-
-  const FormFields = ({ type }: { type: 'vendor' | 'buyer' }) => (
-    <form onSubmit={(e) => handleSubmit(e, type)} className="space-y-4">
-      <div className="space-y-2">
-        <Label htmlFor={`${type}-name`}>Nome Completo</Label>
-        <Input
-          id={`${type}-name`}
-          name="name"
-          placeholder="Seu nome completo"
-          value={formData.name}
-          onChange={handleChange}
-          className="h-12"
-          required
-        />
-      </div>
-
-      <div className="space-y-2">
-        <Label htmlFor={`${type}-email`}>Email</Label>
-        <Input
-          id={`${type}-email`}
-          name="email"
-          type="email"
-          placeholder="seu@email.com"
-          value={formData.email}
-          onChange={handleChange}
-          className="h-12"
-          required
-        />
-      </div>
-
-      <div className="space-y-2">
-        <Label htmlFor={`${type}-phone`}>Telefone</Label>
-        <div className="flex gap-2">
-          <div className="w-24 h-12 border rounded-lg flex items-center justify-center bg-muted text-sm font-medium">
-            +244
-          </div>
-          <Input
-            id={`${type}-phone`}
-            name="phone"
-            type="tel"
-            placeholder="923 456 789"
-            value={formData.phone}
-            onChange={handleChange}
-            className="h-12 flex-1"
-            required
-          />
-        </div>
-      </div>
-
-      <div className="space-y-2">
-        <Label htmlFor={`${type}-password`}>Palavra-passe</Label>
-        <div className="relative">
-          <Input
-            id={`${type}-password`}
-            name="password"
-            type={showPassword ? "text" : "password"}
-            placeholder="••••••••"
-            value={formData.password}
-            onChange={handleChange}
-            className="h-12 pr-12"
-            required
-          />
-          <button
-            type="button"
-            onClick={() => setShowPassword(!showPassword)}
-            className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-          >
-            {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-          </button>
-        </div>
-      </div>
-
-      <div className="space-y-2">
-        <Label htmlFor={`${type}-confirmPassword`}>Confirmar Palavra-passe</Label>
-        <div className="relative">
-          <Input
-            id={`${type}-confirmPassword`}
-            name="confirmPassword"
-            type={showConfirmPassword ? "text" : "password"}
-            placeholder="••••••••"
-            value={formData.confirmPassword}
-            onChange={handleChange}
-            className="h-12 pr-12"
-            required
-          />
-          <button
-            type="button"
-            onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-            className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-          >
-            {showConfirmPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-          </button>
-        </div>
-      </div>
-
-      <div className="flex items-start space-x-2">
-        <Checkbox 
-          id={`${type}-terms`}
-          checked={formData.acceptTerms}
-          onCheckedChange={(checked) => setFormData(prev => ({ ...prev, acceptTerms: checked as boolean }))}
-        />
-        <Label htmlFor={`${type}-terms`} className="text-sm cursor-pointer leading-relaxed">
-          Aceito os{" "}
-          <a href="#" className="text-primary hover:underline">Termos de Uso</a>
-          {" "}e a{" "}
-          <a href="#" className="text-primary hover:underline">Política de Privacidade</a>
-        </Label>
-      </div>
-
-      <Button variant="hero" size="lg" className="w-full" disabled={isLoading}>
-        {isLoading ? "A criar conta..." : `Criar Conta de ${type === 'vendor' ? 'Vendedor' : 'Comprador'}`}
-      </Button>
-    </form>
-  );
 
   return (
     <div className="min-h-screen flex">
@@ -230,11 +108,223 @@ const Registo = () => {
                     Comprador
                   </TabsTrigger>
                 </TabsList>
+                
                 <TabsContent value="vendor">
-                  <FormFields type="vendor" />
+                  <form onSubmit={(e) => handleSubmit(e, 'vendor')} className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="vendor-name">Nome Completo</Label>
+                      <Input
+                        id="vendor-name"
+                        placeholder="Seu nome completo"
+                        value={name}
+                        onChange={(e) => setName(e.target.value)}
+                        className="h-12"
+                        required
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="vendor-email">Email</Label>
+                      <Input
+                        id="vendor-email"
+                        type="email"
+                        placeholder="seu@email.com"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        className="h-12"
+                        required
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="vendor-phone">Telefone</Label>
+                      <div className="flex gap-2">
+                        <div className="w-24 h-12 border rounded-lg flex items-center justify-center bg-muted text-sm font-medium">
+                          +244
+                        </div>
+                        <Input
+                          id="vendor-phone"
+                          type="tel"
+                          placeholder="923 456 789"
+                          value={phone}
+                          onChange={(e) => setPhone(e.target.value)}
+                          className="h-12 flex-1"
+                          required
+                        />
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="vendor-password">Palavra-passe</Label>
+                      <div className="relative">
+                        <Input
+                          id="vendor-password"
+                          type={showPassword ? "text" : "password"}
+                          placeholder="••••••••"
+                          value={password}
+                          onChange={(e) => setPassword(e.target.value)}
+                          className="h-12 pr-12"
+                          required
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowPassword(!showPassword)}
+                          className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                        >
+                          {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="vendor-confirmPassword">Confirmar Palavra-passe</Label>
+                      <div className="relative">
+                        <Input
+                          id="vendor-confirmPassword"
+                          type={showConfirmPassword ? "text" : "password"}
+                          placeholder="••••••••"
+                          value={confirmPassword}
+                          onChange={(e) => setConfirmPassword(e.target.value)}
+                          className="h-12 pr-12"
+                          required
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                          className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                        >
+                          {showConfirmPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="flex items-start space-x-2">
+                      <Checkbox 
+                        id="vendor-terms"
+                        checked={acceptTerms}
+                        onCheckedChange={(checked) => setAcceptTerms(checked as boolean)}
+                      />
+                      <Label htmlFor="vendor-terms" className="text-sm cursor-pointer leading-relaxed">
+                        Aceito os{" "}
+                        <a href="#" className="text-primary hover:underline">Termos de Uso</a>
+                        {" "}e a{" "}
+                        <a href="#" className="text-primary hover:underline">Política de Privacidade</a>
+                      </Label>
+                    </div>
+
+                    <Button variant="hero" size="lg" className="w-full" disabled={isLoading}>
+                      {isLoading ? "A criar conta..." : "Criar Conta de Vendedor"}
+                    </Button>
+                  </form>
                 </TabsContent>
+                
                 <TabsContent value="buyer">
-                  <FormFields type="buyer" />
+                  <form onSubmit={(e) => handleSubmit(e, 'buyer')} className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="buyer-name">Nome Completo</Label>
+                      <Input
+                        id="buyer-name"
+                        placeholder="Seu nome completo"
+                        value={name}
+                        onChange={(e) => setName(e.target.value)}
+                        className="h-12"
+                        required
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="buyer-email">Email</Label>
+                      <Input
+                        id="buyer-email"
+                        type="email"
+                        placeholder="seu@email.com"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        className="h-12"
+                        required
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="buyer-phone">Telefone</Label>
+                      <div className="flex gap-2">
+                        <div className="w-24 h-12 border rounded-lg flex items-center justify-center bg-muted text-sm font-medium">
+                          +244
+                        </div>
+                        <Input
+                          id="buyer-phone"
+                          type="tel"
+                          placeholder="923 456 789"
+                          value={phone}
+                          onChange={(e) => setPhone(e.target.value)}
+                          className="h-12 flex-1"
+                          required
+                        />
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="buyer-password">Palavra-passe</Label>
+                      <div className="relative">
+                        <Input
+                          id="buyer-password"
+                          type={showPassword ? "text" : "password"}
+                          placeholder="••••••••"
+                          value={password}
+                          onChange={(e) => setPassword(e.target.value)}
+                          className="h-12 pr-12"
+                          required
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowPassword(!showPassword)}
+                          className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                        >
+                          {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="buyer-confirmPassword">Confirmar Palavra-passe</Label>
+                      <div className="relative">
+                        <Input
+                          id="buyer-confirmPassword"
+                          type={showConfirmPassword ? "text" : "password"}
+                          placeholder="••••••••"
+                          value={confirmPassword}
+                          onChange={(e) => setConfirmPassword(e.target.value)}
+                          className="h-12 pr-12"
+                          required
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                          className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                        >
+                          {showConfirmPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="flex items-start space-x-2">
+                      <Checkbox 
+                        id="buyer-terms"
+                        checked={acceptTerms}
+                        onCheckedChange={(checked) => setAcceptTerms(checked as boolean)}
+                      />
+                      <Label htmlFor="buyer-terms" className="text-sm cursor-pointer leading-relaxed">
+                        Aceito os{" "}
+                        <a href="#" className="text-primary hover:underline">Termos de Uso</a>
+                        {" "}e a{" "}
+                        <a href="#" className="text-primary hover:underline">Política de Privacidade</a>
+                      </Label>
+                    </div>
+
+                    <Button variant="hero" size="lg" className="w-full" disabled={isLoading}>
+                      {isLoading ? "A criar conta..." : "Criar Conta de Comprador"}
+                    </Button>
+                  </form>
                 </TabsContent>
               </Tabs>
 
