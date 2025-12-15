@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { 
   LayoutDashboard, 
@@ -8,9 +9,12 @@ import {
   Trophy, 
   Settings, 
   LogOut,
-  ShoppingBag
+  ShoppingBag,
+  Menu,
+  X
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 const menuItems = [
@@ -24,9 +28,10 @@ const menuItems = [
 
 const DashboardSidebar = () => {
   const location = useLocation();
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-  return (
-    <aside className="fixed left-0 top-0 bottom-0 w-64 bg-card border-r border-border hidden lg:flex flex-col z-40">
+  const SidebarContent = () => (
+    <>
       {/* Logo */}
       <div className="p-6 border-b border-border">
         <Link to="/" className="flex items-center gap-2">
@@ -52,6 +57,7 @@ const DashboardSidebar = () => {
             <Link
               key={item.path}
               to={item.path}
+              onClick={() => setMobileMenuOpen(false)}
               className={cn(
                 "flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200",
                 isActive
@@ -70,6 +76,7 @@ const DashboardSidebar = () => {
       <div className="p-4 border-t border-border space-y-1">
         <Link
           to="/dashboard/configuracoes"
+          onClick={() => setMobileMenuOpen(false)}
           className="flex items-center gap-3 px-4 py-3 rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
         >
           <Settings className="w-5 h-5" />
@@ -77,13 +84,61 @@ const DashboardSidebar = () => {
         </Link>
         <Link
           to="/"
+          onClick={() => setMobileMenuOpen(false)}
           className="flex items-center gap-3 px-4 py-3 rounded-lg text-destructive hover:bg-destructive/10 transition-colors"
         >
           <LogOut className="w-5 h-5" />
           <span>Sair</span>
         </Link>
       </div>
-    </aside>
+    </>
+  );
+
+  return (
+    <>
+      {/* Mobile Header */}
+      <div className="lg:hidden fixed top-0 left-0 right-0 h-16 bg-card border-b border-border flex items-center justify-between px-4 z-50">
+        <Link to="/" className="flex items-center gap-2">
+          <div className="w-10 h-10 gradient-primary rounded-xl flex items-center justify-center">
+            <ShoppingBag className="w-6 h-6 text-primary-foreground" />
+          </div>
+          <span className="text-xl font-bold text-gradient">HojiVirtual</span>
+        </Link>
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+        >
+          {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+        </Button>
+      </div>
+
+      {/* Mobile Menu Overlay */}
+      {mobileMenuOpen && (
+        <div
+          className="lg:hidden fixed inset-0 bg-foreground/50 z-40"
+          onClick={() => setMobileMenuOpen(false)}
+        />
+      )}
+
+      {/* Mobile Sidebar */}
+      <aside
+        className={cn(
+          "lg:hidden fixed top-16 left-0 bottom-0 w-64 bg-card border-r border-border flex flex-col z-50 transition-transform duration-300",
+          mobileMenuOpen ? "translate-x-0" : "-translate-x-full"
+        )}
+      >
+        <SidebarContent />
+      </aside>
+
+      {/* Desktop Sidebar */}
+      <aside className="fixed left-0 top-0 bottom-0 w-64 bg-card border-r border-border hidden lg:flex flex-col z-40">
+        <SidebarContent />
+      </aside>
+
+      {/* Spacer for mobile header */}
+      <div className="lg:hidden h-16" />
+    </>
   );
 };
 
