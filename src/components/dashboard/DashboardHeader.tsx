@@ -87,7 +87,7 @@ const DashboardHeader = ({ title }: DashboardHeaderProps) => {
         <div className="flex items-center gap-3">
           <div className="hidden sm:block text-right">
             <p className="text-sm font-medium">{currentUser.name}</p>
-            <p className="text-xs text-muted-foreground">Vendedor</p>
+            <p className="text-xs text-muted-foreground">Vendedora</p>
           </div>
           <Avatar className="w-9 h-9">
             <AvatarImage src={currentUser.avatar} alt={currentUser.name} />
