@@ -12,8 +12,10 @@ import Registo from "./pages/Registo";
 import Dashboard from "./pages/Dashboard";
 import DashboardProducts from "./pages/DashboardProducts";
 import DashboardGamification from "./pages/DashboardGamification";
-import MinhaLinha from "./pages/MinhaLinha";
+import MinhaLoja from "./pages/MinhaLoja";
 import QRCodes from "./pages/QRCodes";
+import DashboardAnalytics from "./pages/DashboardAnalytics";
+import DashboardConfiguracoes from "./pages/DashboardConfiguracoes";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -34,8 +36,10 @@ const App = () => (
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/dashboard/produtos" element={<DashboardProducts />} />
             <Route path="/dashboard/gamificacao" element={<DashboardGamification />} />
-            <Route path="/dashboard/minha-linha" element={<MinhaLinha />} />
+            <Route path="/dashboard/minha-loja" element={<MinhaLoja />} />
             <Route path="/dashboard/qrcodes" element={<QRCodes />} />
+            <Route path="/dashboard/analytics" element={<DashboardAnalytics />} />
+            <Route path="/dashboard/configuracoes" element={<DashboardConfiguracoes />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>

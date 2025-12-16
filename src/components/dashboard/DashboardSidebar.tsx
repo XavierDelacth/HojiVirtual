@@ -19,7 +19,7 @@ import { cn } from "@/lib/utils";
 
 const menuItems = [
   { icon: LayoutDashboard, label: "Dashboard", path: "/dashboard" },
-  { icon: Store, label: "Minha Linha", path: "/dashboard/minha-linha" },
+  { icon: Store, label: "Minha Loja", path: "/dashboard/minha-loja" },
   { icon: Package, label: "Produtos", path: "/dashboard/produtos" },
   { icon: QrCode, label: "QR Codes", path: "/dashboard/qrcodes" },
   { icon: BarChart3, label: "Analytics", path: "/dashboard/analytics" },
