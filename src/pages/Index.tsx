@@ -2,7 +2,9 @@ import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 import HeroSection from "@/components/landing/HeroSection";
 import HowItWorks from "@/components/landing/HowItWorks";
+import FeaturedProductsCarousel from "@/components/landing/FeaturedProductsCarousel";
 import PricingSection from "@/components/landing/PricingSection";
+import FeaturedStoresCarousel from "@/components/landing/FeaturedStoresCarousel";
 import PartnersSection from "@/components/landing/PartnersSection";
 import { Helmet } from "react-helmet-async";
 
@@ -19,7 +21,9 @@ const Index = () => {
         <main>
           <HeroSection />
           <HowItWorks />
+          <FeaturedProductsCarousel />
           <PricingSection />
+          <FeaturedStoresCarousel />
           <PartnersSection />
         </main>
         <Footer />
