@@ -463,7 +463,7 @@ export const products: Product[] = [
     storeId: "1",
     storeName: "Boutique Kianda",
     category: "Roupas",
-    images: ["https://images.unsplash.com/photo-1583496661160-fb5886a0af26?w=400"],
+    images: ["https://images.unsplash.com/photo-1577900232427-18219b9166a0?w=400"],
     rating: 4.7,
     reviewCount: 19,
     featured: false
