@@ -108,7 +108,7 @@ export const stores: Store[] = [
     reviewCount: 98,
     verified: true,
     location: "Mercado Hoji Ya Henda, Box 56",
-    image: "https://images.unsplash.com/photo-1513519245088-0e12902e35ca?w=400",
+    image: "https://images.unsplash.com/photo-1528396518501-b53b655eb9b3?w=400",
     description: "Arte tradicional angolana feita à mão"
   },
   {
@@ -463,7 +463,7 @@ export const products: Product[] = [
     storeId: "1",
     storeName: "Boutique Kianda",
     category: "Roupas",
-    images: ["https://images.unsplash.com/photo-1583496661160-fb5886a0uj27?w=400"],
+    images: ["https://images.unsplash.com/photo-1583496661160-fb5886a0af26?w=400"],
     rating: 4.7,
     reviewCount: 19,
     featured: false
