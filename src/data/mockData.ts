@@ -239,7 +239,7 @@ export const products: Product[] = [
     storeId: "5",
     storeName: "Artesanato Luanda",
     category: "Artesanato",
-    images: ["https://images.unsplash.com/photo-1513519245088-0e12902e35ca?w=400"],
+    images: ["https://images.unsplash.com/photo-1605001011156-cbf0b0f67a51?w=400"],
     rating: 4.7,
     reviewCount: 18,
     featured: false
@@ -421,7 +421,7 @@ export const products: Product[] = [
     storeId: "1",
     storeName: "Boutique Kianda",
     category: "Roupas",
-    images: ["https://images.unsplash.com/photo-1625910513413-5fc44c81dc2e?w=400"],
+    images: ["https://images.unsplash.com/photo-1626497764746-6dc36546b388?w=400"],
     rating: 4.7,
     reviewCount: 38,
     featured: true
@@ -603,7 +603,7 @@ export const products: Product[] = [
     storeId: "1",
     storeName: "Boutique Kianda",
     category: "Roupas",
-    images: ["https://images.unsplash.com/photo-1590400516695-36e29039f929?w=400"],
+    images: ["https://images.unsplash.com/photo-1585944285922-66c43b5a8fd4?w=400"],
     rating: 4.9,
     reviewCount: 41,
     featured: true
@@ -743,7 +743,7 @@ export const products: Product[] = [
     storeId: "1",
     storeName: "Boutique Kianda",
     category: "Acessórios",
-    images: ["https://images.unsplash.com/photo-1598030343246-5b8aa6edb36a?w=400"],
+    images: ["https://images.unsplash.com/photo-1507679799987-c73779587ccf?w=400"],
     rating: 4.5,
     reviewCount: 15,
     featured: false
