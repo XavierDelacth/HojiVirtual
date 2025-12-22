@@ -231,20 +231,6 @@ export const products: Product[] = [
     featured: true
   },
   {
-    id: "5",
-    name: "Cesto de Palha Artesanal",
-    description: "Cesto tradicional feito à mão por artesãos locais. Perfeito para decoração ou uso prático.",
-    price: 4000,
-    stock: 25,
-    storeId: "5",
-    storeName: "Artesanato Luanda",
-    category: "Artesanato",
-    images: ["https://images.unsplash.com/photo-1519710164239-da123dc03ef4?w=400"],
-    rating: 4.7,
-    reviewCount: 18,
-    featured: false
-  },
-  {
     id: "6",
     name: "Camisa Social Azul",
     description: "Camisa social masculina de algodão premium. Corte clássico e elegante.",
@@ -593,20 +579,6 @@ export const products: Product[] = [
     rating: 4.5,
     reviewCount: 27,
     featured: false
-  },
-  {
-    id: "31",
-    name: "Vestido Capulana",
-    description: "Vestido feito com tecido capulana tradicional africano, peça única.",
-    price: 9500,
-    stock: 8,
-    storeId: "1",
-    storeName: "Boutique Kianda",
-    category: "Roupas",
-    images: ["https://images.unsplash.com/photo-1590902711473-ed4c4a414b89?w=400"],
-    rating: 4.9,
-    reviewCount: 41,
-    featured: true
   },
   {
     id: "32",
