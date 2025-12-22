@@ -887,7 +887,7 @@ export const currentUser: User = {
   email: "wissel.filipe@email.com",
   phone: "+244 923 456 789",
   type: "vendor",
-  avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100",
+  avatar: "https://images.unsplash.com/photo-1531746020798-e6953c6e8e04?w=100",
   points: 2345,
   level: "Ouro"
 };
