@@ -239,7 +239,7 @@ export const products: Product[] = [
     storeId: "5",
     storeName: "Artesanato Luanda",
     category: "Artesanato",
-    images: ["https://images.unsplash.com/photo-1605001011156-cbf0b0f67a51?w=400"],
+    images: ["https://images.unsplash.com/photo-1595079676339-1534801ad6cf?w=400"],
     rating: 4.7,
     reviewCount: 18,
     featured: false
@@ -603,7 +603,7 @@ export const products: Product[] = [
     storeId: "1",
     storeName: "Boutique Kianda",
     category: "Roupas",
-    images: ["https://images.unsplash.com/photo-1585944285922-66c43b5a8fd4?w=400"],
+    images: ["https://images.unsplash.com/photo-1590735213920-68192a487bc2?w=400"],
     rating: 4.9,
     reviewCount: 41,
     featured: true
