@@ -1,9 +1,12 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { Camera } from "lucide-react";
+import { currentUser } from "@/data/mockData";
 
 interface StoreData {
   name: string;
@@ -23,11 +26,28 @@ interface EditProfileModalProps {
 
 const EditProfileModal = ({ open, onOpenChange, storeData, onSave }: EditProfileModalProps) => {
   const [formData, setFormData] = useState<StoreData>(storeData);
+  const [avatarPreview, setAvatarPreview] = useState<string>(currentUser.avatar);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     onSave(formData);
     onOpenChange(false);
+  };
+
+  const handleAvatarClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setAvatarPreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
   };
 
   return (
@@ -37,6 +57,30 @@ const EditProfileModal = ({ open, onOpenChange, storeData, onSave }: EditProfile
           <DialogTitle>Editar Perfil da Loja</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
+          {/* Avatar/Photo Edit Section */}
+          <div className="flex flex-col items-center gap-3 pb-4 border-b">
+            <div className="relative group cursor-pointer" onClick={handleAvatarClick}>
+              <Avatar className="w-24 h-24 border-4 border-primary/20">
+                <AvatarImage src={avatarPreview} alt="Foto de perfil" />
+                <AvatarFallback className="text-2xl">{currentUser.name.charAt(0)}</AvatarFallback>
+              </Avatar>
+              <div className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-full opacity-0 group-hover:opacity-100 transition-opacity">
+                <Camera className="w-8 h-8 text-white" />
+              </div>
+            </div>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={handleFileChange}
+            />
+            <Button type="button" variant="outline" size="sm" onClick={handleAvatarClick}>
+              <Camera className="w-4 h-4 mr-2" />
+              Alterar Foto
+            </Button>
+          </div>
+
           <div className="space-y-2">
             <Label htmlFor="name">Nome da Loja</Label>
             <Input

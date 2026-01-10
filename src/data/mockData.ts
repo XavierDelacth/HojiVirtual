@@ -883,8 +883,8 @@ export const reviews: Review[] = [
 
 export const currentUser: User = {
   id: "vendor-1",
-  name: "Wissel Filipe",
-  email: "wissel.filipe@email.com",
+  name: "Maria Santos",
+  email: "maria.santos@email.com",
   phone: "+244 923 456 789",
   type: "vendor",
   avatar: "https://images.unsplash.com/photo-1531746020798-e6953c6e8e04?w=100",
