@@ -5,8 +5,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
-import { Camera } from "lucide-react";
+import { Camera, Loader2 } from "lucide-react";
 import { currentUser } from "@/data/mockData";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
+
+const MAX_FILE_SIZE = 2 * 1024 * 1024; // 2MB
+const ALLOWED_FILE_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif"];
 
 interface StoreData {
   name: string;
@@ -27,10 +32,72 @@ interface EditProfileModalProps {
 const EditProfileModal = ({ open, onOpenChange, storeData, onSave }: EditProfileModalProps) => {
   const [formData, setFormData] = useState<StoreData>(storeData);
   const [avatarPreview, setAvatarPreview] = useState<string>(currentUser.avatar);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const { toast } = useToast();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const validateFile = (file: File): string | null => {
+    if (!ALLOWED_FILE_TYPES.includes(file.type)) {
+      return "Formato não suportado. Use JPEG, PNG, WebP ou GIF.";
+    }
+    if (file.size > MAX_FILE_SIZE) {
+      return "A imagem deve ter no máximo 2MB.";
+    }
+    return null;
+  };
+
+  const uploadAvatar = async (file: File): Promise<string | null> => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      toast({
+        title: "Erro",
+        description: "Você precisa estar logado para alterar a foto.",
+        variant: "destructive",
+      });
+      return null;
+    }
+
+    const fileExt = file.name.split('.').pop();
+    const fileName = `${user.id}/avatar.${fileExt}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from('avatars')
+      .upload(fileName, file, { upsert: true });
+
+    if (uploadError) {
+      console.error("Upload error:", uploadError);
+      toast({
+        title: "Erro no upload",
+        description: "Não foi possível enviar a imagem. Tente novamente.",
+        variant: "destructive",
+      });
+      return null;
+    }
+
+    const { data: { publicUrl } } = supabase.storage
+      .from('avatars')
+      .getPublicUrl(fileName);
+
+    return publicUrl;
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (selectedFile) {
+      setIsUploading(true);
+      const avatarUrl = await uploadAvatar(selectedFile);
+      setIsUploading(false);
+      
+      if (avatarUrl) {
+        toast({
+          title: "Foto atualizada",
+          description: "Sua foto de perfil foi salva com sucesso!",
+        });
+      }
+    }
+    
     onSave(formData);
     onOpenChange(false);
   };
@@ -41,13 +108,24 @@ const EditProfileModal = ({ open, onOpenChange, storeData, onSave }: EditProfile
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setAvatarPreview(reader.result as string);
-      };
-      reader.readAsDataURL(file);
+    if (!file) return;
+
+    const validationError = validateFile(file);
+    if (validationError) {
+      toast({
+        title: "Arquivo inválido",
+        description: validationError,
+        variant: "destructive",
+      });
+      return;
     }
+
+    setSelectedFile(file);
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setAvatarPreview(reader.result as string);
+    };
+    reader.readAsDataURL(file);
   };
 
   return (
@@ -75,10 +153,13 @@ const EditProfileModal = ({ open, onOpenChange, storeData, onSave }: EditProfile
               className="hidden"
               onChange={handleFileChange}
             />
-            <Button type="button" variant="outline" size="sm" onClick={handleAvatarClick}>
+            <Button type="button" variant="outline" size="sm" onClick={handleAvatarClick} disabled={isUploading}>
               <Camera className="w-4 h-4 mr-2" />
               Alterar Foto
             </Button>
+            <p className="text-xs text-muted-foreground">
+              JPEG, PNG, WebP ou GIF • Máx. 2MB
+            </p>
           </div>
 
           <div className="space-y-2">
@@ -137,7 +218,16 @@ const EditProfileModal = ({ open, onOpenChange, storeData, onSave }: EditProfile
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               Cancelar
             </Button>
-            <Button type="submit">Salvar Alterações</Button>
+            <Button type="submit" disabled={isUploading}>
+              {isUploading ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Enviando...
+                </>
+              ) : (
+                "Salvar Alterações"
+              )}
+            </Button>
           </div>
         </form>
       </DialogContent>
