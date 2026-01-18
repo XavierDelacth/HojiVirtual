@@ -342,8 +342,7 @@ const MinhaLinha = () => {
       <EditProfileModal
         open={editProfileOpen}
         onOpenChange={setEditProfileOpen}
-        storeData={storeData}
-        onSave={(data) => {
+        onSave={() => {
           toast.success("Perfil atualizado com sucesso!");
         }}
       />
