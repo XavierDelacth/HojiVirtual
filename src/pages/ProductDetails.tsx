@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { Star, MapPin, BadgeCheck, ArrowLeft, MessageCircle, Truck, ShoppingBag } from "lucide-react";
+import { Star, MapPin, BadgeCheck, ArrowLeft, MessageCircle, ShoppingBag, Loader2 } from "lucide-react";
+import { QRCodeSVG } from "qrcode.react";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 import { Button } from "@/components/ui/button";
@@ -8,12 +9,18 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { products, stores, reviews, paymentMethods } from "@/data/mockData";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
 const ProductDetails = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { toast } = useToast();
   const [showPurchaseModal, setShowPurchaseModal] = useState(false);
-  const [qrCode, setQrCode] = useState("");
+  const [purchaseId, setPurchaseId] = useState<string | null>(null);
+  const [isCreatingPurchase, setIsCreatingPurchase] = useState(false);
+  const [timeRemaining, setTimeRemaining] = useState("3h 00min");
+  const [expiresAt, setExpiresAt] = useState<Date | null>(null);
 
   const product = products.find(p => p.id === id);
   const store = stores.find(s => s.id === product?.storeId);
@@ -23,10 +30,107 @@ const ProductDetails = () => {
     return new Intl.NumberFormat('pt-AO').format(price);
   };
 
-  const generateQRCode = () => {
-    const code = Math.random().toString(36).substring(2, 8).toUpperCase();
-    setQrCode(code);
-    setShowPurchaseModal(true);
+  // Timer countdown
+  useEffect(() => {
+    if (!expiresAt) return;
+
+    const interval = setInterval(() => {
+      const now = new Date();
+      const diff = expiresAt.getTime() - now.getTime();
+
+      if (diff <= 0) {
+        setTimeRemaining("Expirado");
+        clearInterval(interval);
+        return;
+      }
+
+      const hours = Math.floor(diff / (1000 * 60 * 60));
+      const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+      setTimeRemaining(`${hours}h ${minutes.toString().padStart(2, '0')}min`);
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [expiresAt]);
+
+  const handlePurchase = async () => {
+    if (!product || !store) return;
+
+    setIsCreatingPurchase(true);
+
+    try {
+      // Check if user is authenticated
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) {
+        toast({
+          title: "Autenticação necessária",
+          description: "Por favor, faça login para realizar uma compra.",
+          variant: "destructive",
+        });
+        navigate("/login");
+        return;
+      }
+
+      // Get user profile for buyer name
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("name")
+        .eq("user_id", user.id)
+        .maybeSingle();
+
+      const buyerName = profile?.name || user.email?.split('@')[0] || "Comprador";
+
+      // Create purchase record
+      const { data: purchase, error } = await supabase
+        .from("purchases")
+        .insert({
+          buyer_id: user.id,
+          buyer_name: buyerName,
+          product_name: product.name,
+          product_price: product.price,
+          store_name: store.name,
+          store_id: store.id,
+          product_id: product.id,
+          product_image: product.images[0],
+          status: "pending",
+        })
+        .select()
+        .single();
+
+      if (error) {
+        console.error("Error creating purchase:", error);
+        toast({
+          title: "Erro",
+          description: "Não foi possível processar a compra. Tente novamente.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      setPurchaseId(purchase.id);
+      setExpiresAt(new Date(purchase.expires_at));
+      setShowPurchaseModal(true);
+
+      toast({
+        title: "Compra iniciada!",
+        description: "Apresente o QR Code ao vendedor para validar.",
+      });
+    } catch (err) {
+      console.error("Purchase error:", err);
+      toast({
+        title: "Erro",
+        description: "Ocorreu um erro inesperado. Tente novamente.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsCreatingPurchase(false);
+    }
+  };
+
+  const getQRCodeUrl = () => {
+    if (!purchaseId) return "";
+    const baseUrl = window.location.origin;
+    return `${baseUrl}/comprovativo/${purchaseId}`;
   };
 
   if (!product) {
@@ -154,9 +258,19 @@ const ProductDetails = () => {
 
               {/* Action Buttons */}
               <div className="flex flex-col sm:flex-row gap-3 pt-4">
-                <Button variant="hero" size="lg" className="flex-1" onClick={generateQRCode}>
-                  <ShoppingBag className="w-5 h-5 mr-2" />
-                  Comprar Agora
+                <Button 
+                  variant="hero" 
+                  size="lg" 
+                  className="flex-1" 
+                  onClick={handlePurchase}
+                  disabled={isCreatingPurchase}
+                >
+                  {isCreatingPurchase ? (
+                    <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                  ) : (
+                    <ShoppingBag className="w-5 h-5 mr-2" />
+                  )}
+                  {isCreatingPurchase ? "A processar..." : "Comprar Agora"}
                 </Button>
                 <Button variant="outline" size="lg" className="flex-1">
                   <MessageCircle className="w-5 h-5 mr-2" />
@@ -235,7 +349,7 @@ const ProductDetails = () => {
         </div>
       </main>
 
-      {/* Purchase Modal */}
+      {/* Purchase Modal with Real QR Code */}
       <Dialog open={showPurchaseModal} onOpenChange={setShowPurchaseModal}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
@@ -262,20 +376,24 @@ const ProductDetails = () => {
               </div>
             </div>
 
-            {/* QR Code Placeholder */}
+            {/* Real QR Code */}
             <div className="text-center">
-              <div className="w-48 h-48 mx-auto bg-foreground rounded-2xl flex items-center justify-center mb-4">
-                <div className="text-background text-center">
-                  <div className="text-6xl mb-2">📱</div>
-                  <div className="text-sm font-mono">{qrCode}</div>
-                </div>
+              <div className="w-52 h-52 mx-auto bg-white rounded-2xl flex items-center justify-center p-3 shadow-lg">
+                {purchaseId && (
+                  <QRCodeSVG
+                    value={getQRCodeUrl()}
+                    size={180}
+                    level="H"
+                    includeMargin={false}
+                  />
+                )}
               </div>
-              <p className="text-sm font-mono text-muted-foreground mb-2">
-                Código: <span className="font-bold text-foreground">{qrCode}</span>
+              <p className="text-sm text-muted-foreground mt-4 mb-2">
+                Escaneie o QR Code para ver o comprovativo
               </p>
               <div className="flex items-center justify-center gap-2 text-secondary">
                 <span className="text-lg">⏰</span>
-                <span className="text-sm font-medium">Válido por: 3h 59min</span>
+                <span className="text-sm font-medium">Válido por: {timeRemaining}</span>
               </div>
             </div>
 
