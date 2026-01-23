@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Helmet } from "react-helmet-async";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -8,6 +8,7 @@ import DashboardSidebar from "@/components/dashboard/DashboardSidebar";
 import EditProfileModal from "@/components/dashboard/EditProfileModal";
 import AddProductModal from "@/components/dashboard/AddProductModal";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 import { 
   Store, 
   MapPin, 
@@ -22,45 +23,94 @@ import {
   Users,
   BarChart3,
   Edit,
-  Plus
+  Plus,
+  Loader2
 } from "lucide-react";
 import { products } from "@/data/mockData";
+
+interface ProfileData {
+  name: string | null;
+  store_name: string | null;
+  store_description: string | null;
+  location: string | null;
+  phone: string | null;
+  email: string | null;
+  bio: string | null;
+  avatar_url: string | null;
+}
 
 const MinhaLinha = () => {
   const [editProfileOpen, setEditProfileOpen] = useState(false);
   const [addProductOpen, setAddProductOpen] = useState(false);
-  // Mock store data
-  const storeData = {
-    name: "Loja da Maria",
-    description: "Vendedora especializada em vestuário feminino e produtos alimentares de qualidade. Presente no mercado Hoji Ya Henda há mais de 5 anos.",
-    location: "Mercado Hoji Ya Henda, Banca 45",
-    phone: "+244 923 456 789",
-    email: "maria.loja@email.com",
-    hours: "08:00 - 18:00",
-    rating: 4.8,
-    totalSales: 1250,
-    totalRevenue: 2850000,
-    verified: true
+  const [isLoading, setIsLoading] = useState(true);
+  const [profile, setProfile] = useState<ProfileData | null>(null);
+
+  const fetchProfile = async () => {
+    setIsLoading(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) {
+        setIsLoading(false);
+        return;
+      }
+
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('user_id', user.id)
+        .maybeSingle();
+
+      if (error) {
+        console.error('Error fetching profile:', error);
+        toast.error('Erro ao carregar perfil');
+      } else {
+        setProfile(data);
+      }
+    } catch (error) {
+      console.error('Error:', error);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  // Mock statistics
+  useEffect(() => {
+    fetchProfile();
+  }, []);
+
+  // Use profile data or fallback to defaults
+  const storeData = {
+    name: profile?.store_name || "Minha Loja",
+    description: profile?.store_description || profile?.bio || "Adicione uma descrição para sua loja.",
+    location: profile?.location || "Adicione sua localização",
+    phone: profile?.phone || "Adicione seu telefone",
+    email: profile?.email || "Adicione seu email",
+    hours: "08:00 - 18:00",
+    rating: 4.8,
+    totalSales: 0,
+    totalRevenue: 0,
+    verified: false,
+    avatar_url: profile?.avatar_url
+  };
+
+  // Mock statistics (can be replaced with real data later)
   const stats = {
-    totalProducts: 24,
-    activeSales: 8,
-    monthlyRevenue: 450000,
-    monthlyOrders: 67,
-    avgRating: 4.8,
-    totalCustomers: 312
+    totalProducts: products.length,
+    activeSales: 0,
+    monthlyRevenue: 0,
+    monthlyOrders: 0,
+    avgRating: 0,
+    totalCustomers: 0
   };
 
   // Mock sales data for chart representation
   const recentSales = [
-    { month: "Jan", value: 320000 },
-    { month: "Fev", value: 380000 },
-    { month: "Mar", value: 420000 },
-    { month: "Abr", value: 390000 },
-    { month: "Mai", value: 450000 },
-    { month: "Jun", value: 480000 }
+    { month: "Jan", value: 0 },
+    { month: "Fev", value: 0 },
+    { month: "Mar", value: 0 },
+    { month: "Abr", value: 0 },
+    { month: "Mai", value: 0 },
+    { month: "Jun", value: 0 }
   ];
 
   return (
@@ -95,13 +145,26 @@ const MinhaLinha = () => {
 
             {/* Perfil da Loja */}
             <TabsContent value="perfil" className="space-y-6 animate-fade-in">
+              {isLoading ? (
+                <Card className="flex items-center justify-center py-12">
+                  <Loader2 className="w-8 h-8 animate-spin text-primary" />
+                </Card>
+              ) : (
               <Card>
                 <CardHeader>
                   <div className="flex items-start justify-between">
                     <div className="flex items-center gap-4">
-                      <div className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center">
-                        <Store className="w-10 h-10 text-primary" />
-                      </div>
+                      {storeData.avatar_url ? (
+                        <img 
+                          src={storeData.avatar_url} 
+                          alt={storeData.name}
+                          className="w-20 h-20 rounded-full object-cover"
+                        />
+                      ) : (
+                        <div className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center">
+                          <Store className="w-10 h-10 text-primary" />
+                        </div>
+                      )}
                       <div>
                         <div className="flex items-center gap-2">
                           <CardTitle className="text-xl">{storeData.name}</CardTitle>
@@ -173,6 +236,7 @@ const MinhaLinha = () => {
                   </div>
                 </CardContent>
               </Card>
+              )}
             </TabsContent>
 
             {/* Linha de Produtos */}
@@ -343,6 +407,7 @@ const MinhaLinha = () => {
         open={editProfileOpen}
         onOpenChange={setEditProfileOpen}
         onSave={() => {
+          fetchProfile();
           toast.success("Perfil atualizado com sucesso!");
         }}
       />
