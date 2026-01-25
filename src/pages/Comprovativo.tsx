@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef } from "react";
 import { useParams, useSearchParams, Link } from "react-router-dom";
-import { CheckCircle2, Store, User, Package, Calendar, Loader2, AlertCircle, Download } from "lucide-react";
+import { CheckCircle2, Store, User, Package, Calendar, Loader2, AlertCircle, Download, MessageCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -59,6 +59,25 @@ const Comprovativo = () => {
     } finally {
       setIsGeneratingPDF(false);
     }
+  };
+
+  const handleShareWhatsApp = () => {
+    if (!purchase) return;
+    
+    const receiptUrl = window.location.href;
+    const message = `✅ *COMPROVATIVO DE COMPRA*
+
+🛍️ *Produto:* ${purchase.product_name}
+💰 *Valor:* ${formatPrice(purchase.product_price)} Kz
+🏪 *Loja:* ${purchase.store_name}
+👤 *Comprador:* ${purchase.buyer_name}
+📅 *Data:* ${formatDate(purchase.created_at)}
+🔢 *ID:* ${purchase.id.slice(0, 8).toUpperCase()}
+
+📎 Ver comprovativo: ${receiptUrl}`;
+
+    const encodedMessage = encodeURIComponent(message);
+    window.open(`https://wa.me/?text=${encodedMessage}`, '_blank');
   };
 
   useEffect(() => {
@@ -253,6 +272,14 @@ const Comprovativo = () => {
                   Gerar PDF do Comprovativo
                 </>
               )}
+            </Button>
+            <Button 
+              variant="secondary" 
+              className="w-full bg-[#25D366] hover:bg-[#20BD5A] text-white"
+              onClick={handleShareWhatsApp}
+            >
+              <MessageCircle className="w-4 h-4" />
+              Enviar via WhatsApp
             </Button>
             <Link to="/explorar" className="block">
               <Button variant="hero" className="w-full">
