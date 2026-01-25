@@ -112,42 +112,7 @@ export type Database = {
       }
     }
     Views: {
-      profiles_public: {
-        Row: {
-          avatar_url: string | null
-          bio: string | null
-          created_at: string | null
-          id: string | null
-          location: string | null
-          name: string | null
-          store_description: string | null
-          store_name: string | null
-          user_id: string | null
-        }
-        Insert: {
-          avatar_url?: string | null
-          bio?: string | null
-          created_at?: string | null
-          id?: string | null
-          location?: string | null
-          name?: string | null
-          store_description?: string | null
-          store_name?: string | null
-          user_id?: string | null
-        }
-        Update: {
-          avatar_url?: string | null
-          bio?: string | null
-          created_at?: string | null
-          id?: string | null
-          location?: string | null
-          name?: string | null
-          store_description?: string | null
-          store_name?: string | null
-          user_id?: string | null
-        }
-        Relationships: []
-      }
+      [_ in never]: never
     }
     Functions: {
       [_ in never]: never
