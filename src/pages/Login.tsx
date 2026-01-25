@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import { Eye, EyeOff, ShoppingBag } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,27 +7,79 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { toast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 const Login = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
+  // Check if user is already authenticated
+  useEffect(() => {
+    const checkSession = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        const from = (location.state as { from?: { pathname: string } })?.from?.pathname || "/dashboard";
+        navigate(from, { replace: true });
+      }
+    };
+    checkSession();
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session) {
+        const from = (location.state as { from?: { pathname: string } })?.from?.pathname || "/dashboard";
+        navigate(from, { replace: true });
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, [navigate, location]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!email.trim() || !password.trim()) {
+      toast({
+        title: "Erro",
+        description: "Por favor, preencha todos os campos.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsLoading(true);
     
-    // Simulate login
-    setTimeout(() => {
-      setIsLoading(false);
+    const { error } = await supabase.auth.signInWithPassword({
+      email: email.trim(),
+      password: password,
+    });
+
+    setIsLoading(false);
+
+    if (error) {
+      let errorMessage = "Ocorreu um erro ao fazer login.";
+      
+      if (error.message.includes("Invalid login credentials")) {
+        errorMessage = "Email ou palavra-passe incorretos.";
+      } else if (error.message.includes("Email not confirmed")) {
+        errorMessage = "Por favor, confirme o seu email antes de fazer login.";
+      }
+
       toast({
-        title: "Login bem-sucedido!",
-        description: "Bem-vindo de volta ao HojiVirtual",
+        title: "Erro de autenticação",
+        description: errorMessage,
+        variant: "destructive",
       });
-      navigate("/dashboard");
-    }, 1000);
+      return;
+    }
+    
+    toast({
+      title: "Login bem-sucedido!",
+      description: "Bem-vindo de volta ao HojiVirtual",
+    });
   };
 
   return (
@@ -73,15 +125,16 @@ const Login = () => {
             <CardContent className="px-0">
               <form onSubmit={handleSubmit} className="space-y-5">
                 <div className="space-y-2">
-                  <Label htmlFor="email">Email ou Telefone</Label>
+                  <Label htmlFor="email">Email</Label>
                   <Input
                     id="email"
-                    type="text"
+                    type="email"
                     placeholder="seu@email.com"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     className="h-12"
                     required
+                    autoComplete="email"
                   />
                 </div>
 
@@ -96,6 +149,7 @@ const Login = () => {
                       onChange={(e) => setPassword(e.target.value)}
                       className="h-12 pr-12"
                       required
+                      autoComplete="current-password"
                     />
                     <button
                       type="button"

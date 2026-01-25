@@ -18,6 +18,7 @@ const ProductDetails = () => {
   const { toast } = useToast();
   const [showPurchaseModal, setShowPurchaseModal] = useState(false);
   const [purchaseId, setPurchaseId] = useState<string | null>(null);
+  const [purchaseToken, setPurchaseToken] = useState<string | null>(null);
   const [isCreatingPurchase, setIsCreatingPurchase] = useState(false);
   const [timeRemaining, setTimeRemaining] = useState("3h 00min");
   const [expiresAt, setExpiresAt] = useState<Date | null>(null);
@@ -80,7 +81,7 @@ const ProductDetails = () => {
 
       const buyerName = profile?.name || user.email?.split('@')[0] || "Comprador";
 
-      // Create purchase record
+      // Create purchase record with secure token
       const { data: purchase, error } = await supabase
         .from("purchases")
         .insert({
@@ -94,7 +95,7 @@ const ProductDetails = () => {
           product_image: product.images[0],
           status: "pending",
         })
-        .select()
+        .select('id, expires_at, secure_token')
         .single();
 
       if (error) {
@@ -108,6 +109,7 @@ const ProductDetails = () => {
       }
 
       setPurchaseId(purchase.id);
+      setPurchaseToken(purchase.secure_token);
       setExpiresAt(new Date(purchase.expires_at));
       setShowPurchaseModal(true);
 
@@ -128,9 +130,9 @@ const ProductDetails = () => {
   };
 
   const getQRCodeUrl = () => {
-    if (!purchaseId) return "";
+    if (!purchaseId || !purchaseToken) return "";
     const baseUrl = window.location.origin;
-    return `${baseUrl}/comprovativo/${purchaseId}`;
+    return `${baseUrl}/comprovativo/${purchaseId}?token=${encodeURIComponent(purchaseToken)}`;
   };
 
   if (!product) {
