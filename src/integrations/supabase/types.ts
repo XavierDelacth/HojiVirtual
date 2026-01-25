@@ -63,6 +63,7 @@ export type Database = {
         Row: {
           buyer_id: string | null
           buyer_name: string
+          buyer_phone: string | null
           created_at: string
           expires_at: string
           id: string
@@ -79,6 +80,7 @@ export type Database = {
         Insert: {
           buyer_id?: string | null
           buyer_name: string
+          buyer_phone?: string | null
           created_at?: string
           expires_at?: string
           id?: string
@@ -95,6 +97,7 @@ export type Database = {
         Update: {
           buyer_id?: string | null
           buyer_name?: string
+          buyer_phone?: string | null
           created_at?: string
           expires_at?: string
           id?: string

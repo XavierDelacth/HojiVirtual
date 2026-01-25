@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef } from "react";
 import { useParams, useSearchParams, Link } from "react-router-dom";
-import { CheckCircle2, Store, User, Package, Calendar, Loader2, AlertCircle, Download, MessageCircle } from "lucide-react";
+import { CheckCircle2, Store, User, Package, Calendar, Loader2, AlertCircle, Download, MessageCircle, Phone } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -10,6 +10,7 @@ import html2canvas from "html2canvas";
 interface Purchase {
   id: string;
   buyer_name: string;
+  buyer_phone: string | null;
   product_name: string;
   product_price: number;
   store_name: string;
@@ -239,6 +240,16 @@ const Comprovativo = () => {
                   <p className="font-medium">{purchase.buyer_name}</p>
                 </div>
               </div>
+
+              {purchase.buyer_phone && (
+                <div className="flex items-center gap-3 p-3 bg-muted/30 rounded-lg">
+                  <Phone className="w-5 h-5 text-primary flex-shrink-0" />
+                  <div>
+                    <p className="text-xs text-muted-foreground">Telefone</p>
+                    <p className="font-medium">{purchase.buyer_phone}</p>
+                  </div>
+                </div>
+              )}
 
               <div className="flex items-center gap-3 p-3 bg-muted/30 rounded-lg">
                 <Calendar className="w-5 h-5 text-primary flex-shrink-0" />
