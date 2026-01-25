@@ -1,5 +1,7 @@
 import { useState } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 import { 
   LayoutDashboard, 
   Store, 
@@ -28,7 +30,35 @@ const menuItems = [
 
 const DashboardSidebar = () => {
   const location = useLocation();
+  const navigate = useNavigate();
+  const { toast } = useToast();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  const handleLogout = async () => {
+    try {
+      const { error } = await supabase.auth.signOut();
+      if (error) {
+        toast({
+          title: "Erro ao sair",
+          description: "Não foi possível terminar a sessão.",
+          variant: "destructive",
+        });
+      } else {
+        navigate("/", { replace: true });
+        toast({
+          title: "Sessão terminada",
+          description: "Você saiu com sucesso.",
+        });
+      }
+    } catch (err) {
+      console.error("Logout error:", err);
+      toast({
+        title: "Erro ao sair",
+        description: "Ocorreu um erro inesperado.",
+        variant: "destructive",
+      });
+    }
+  };
 
   const SidebarContent = () => (
     <>
@@ -82,14 +112,16 @@ const DashboardSidebar = () => {
           <Settings className="w-5 h-5" />
           <span>Configurações</span>
         </Link>
-        <Link
-          to="/"
-          onClick={() => setMobileMenuOpen(false)}
-          className="flex items-center gap-3 px-4 py-3 rounded-lg text-destructive hover:bg-destructive/10 transition-colors"
+        <button
+          onClick={() => {
+            setMobileMenuOpen(false);
+            handleLogout();
+          }}
+          className="flex items-center gap-3 px-4 py-3 rounded-lg text-destructive hover:bg-destructive/10 transition-colors w-full text-left"
         >
           <LogOut className="w-5 h-5" />
           <span>Sair</span>
-        </Link>
+        </button>
       </div>
     </>
   );
