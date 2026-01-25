@@ -277,6 +277,7 @@ const EditProfileModal = ({ open, onOpenChange, onSave }: EditProfileModalProps)
                 value={formData.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                 placeholder="Seu nome completo"
+                maxLength={100}
               />
             </div>
 
@@ -288,6 +289,7 @@ const EditProfileModal = ({ open, onOpenChange, onSave }: EditProfileModalProps)
                 value={formData.bio}
                 onChange={(e) => setFormData({ ...formData, bio: e.target.value })}
                 placeholder="Fale um pouco sobre você"
+                maxLength={500}
               />
             </div>
 
@@ -302,6 +304,7 @@ const EditProfileModal = ({ open, onOpenChange, onSave }: EditProfileModalProps)
                     value={formData.store_name}
                     onChange={(e) => setFormData({ ...formData, store_name: e.target.value })}
                     placeholder="Nome da sua loja"
+                    maxLength={100}
                   />
                 </div>
 
@@ -313,6 +316,7 @@ const EditProfileModal = ({ open, onOpenChange, onSave }: EditProfileModalProps)
                     value={formData.store_description}
                     onChange={(e) => setFormData({ ...formData, store_description: e.target.value })}
                     placeholder="Descreva sua loja e produtos"
+                    maxLength={1000}
                   />
                 </div>
 
@@ -323,6 +327,7 @@ const EditProfileModal = ({ open, onOpenChange, onSave }: EditProfileModalProps)
                     value={formData.location}
                     onChange={(e) => setFormData({ ...formData, location: e.target.value })}
                     placeholder="Cidade, País"
+                    maxLength={200}
                   />
                 </div>
 
@@ -334,6 +339,7 @@ const EditProfileModal = ({ open, onOpenChange, onSave }: EditProfileModalProps)
                       value={formData.phone}
                       onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                       placeholder="+244 9XX XXX XXX"
+                      maxLength={30}
                     />
                   </div>
                   <div className="space-y-2">
@@ -344,6 +350,7 @@ const EditProfileModal = ({ open, onOpenChange, onSave }: EditProfileModalProps)
                       value={formData.email}
                       onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                       placeholder="email@exemplo.com"
+                      maxLength={255}
                     />
                   </div>
                 </div>
