@@ -38,7 +38,7 @@ Deno.serve(async (req) => {
     // Fetch purchase with matching ID AND token
     const { data: purchase, error } = await supabase
       .from('purchases')
-      .select('id, buyer_name, product_name, product_price, store_name, product_image, status, created_at, validated_at')
+      .select('id, buyer_name, product_name, product_price, store_name, product_image, status, created_at, validated_at, expires_at')
       .eq('id', purchaseId)
       .eq('secure_token', token)
       .maybeSingle();
@@ -60,6 +60,18 @@ Deno.serve(async (req) => {
         JSON.stringify({ error: 'Comprovativo não encontrado ou token inválido' }),
         { 
           status: 404, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      );
+    }
+
+    // Check if purchase has expired
+    if (purchase.expires_at && new Date(purchase.expires_at) < new Date()) {
+      console.log('Purchase expired:', purchase.id);
+      return new Response(
+        JSON.stringify({ error: 'Comprovativo expirado' }),
+        { 
+          status: 410, 
           headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
         }
       );
