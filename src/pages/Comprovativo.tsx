@@ -1,9 +1,11 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useParams, useSearchParams, Link } from "react-router-dom";
-import { CheckCircle2, Store, User, Package, Calendar, Loader2, AlertCircle } from "lucide-react";
+import { CheckCircle2, Store, User, Package, Calendar, Loader2, AlertCircle, Download } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import jsPDF from "jspdf";
+import html2canvas from "html2canvas";
 
 interface Purchase {
   id: string;
@@ -25,6 +27,39 @@ const Comprovativo = () => {
   const [purchase, setPurchase] = useState<Purchase | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
+  const receiptRef = useRef<HTMLDivElement>(null);
+
+  const handleGeneratePDF = async () => {
+    if (!receiptRef.current || !purchase) return;
+    
+    setIsGeneratingPDF(true);
+    try {
+      const canvas = await html2canvas(receiptRef.current, {
+        scale: 2,
+        backgroundColor: "#ffffff",
+        useCORS: true,
+      });
+      
+      const imgData = canvas.toDataURL("image/png");
+      const pdf = new jsPDF({
+        orientation: "portrait",
+        unit: "mm",
+        format: "a4",
+      });
+      
+      const imgWidth = 190;
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+      const xOffset = (210 - imgWidth) / 2;
+      
+      pdf.addImage(imgData, "PNG", xOffset, 10, imgWidth, imgHeight);
+      pdf.save(`comprovativo-${purchase.id.slice(0, 8).toUpperCase()}.pdf`);
+    } catch (err) {
+      console.error("Error generating PDF:", err);
+    } finally {
+      setIsGeneratingPDF(false);
+    }
+  };
 
   useEffect(() => {
     const fetchPurchase = async () => {
@@ -127,7 +162,7 @@ const Comprovativo = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-accent/10 via-background to-primary/10 flex items-center justify-center p-4">
-      <Card className="max-w-md w-full overflow-hidden shadow-2xl">
+      <Card className="max-w-md w-full overflow-hidden shadow-2xl" ref={receiptRef}>
         {/* Success Header */}
         <div className="bg-gradient-to-r from-accent to-accent/80 text-accent-foreground p-6 text-center">
           <CheckCircle2 className="w-16 h-16 mx-auto mb-3" />
@@ -201,6 +236,24 @@ const Comprovativo = () => {
 
           {/* Action Buttons */}
           <div className="space-y-3 pt-2">
+            <Button 
+              variant="outline-hero" 
+              className="w-full" 
+              onClick={handleGeneratePDF}
+              disabled={isGeneratingPDF}
+            >
+              {isGeneratingPDF ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  A gerar PDF...
+                </>
+              ) : (
+                <>
+                  <Download className="w-4 h-4" />
+                  Gerar PDF do Comprovativo
+                </>
+              )}
+            </Button>
             <Link to="/explorar" className="block">
               <Button variant="hero" className="w-full">
                 Continuar a Comprar
