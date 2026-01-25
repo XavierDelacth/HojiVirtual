@@ -70,6 +70,7 @@ export type Database = {
           product_image: string | null
           product_name: string
           product_price: number
+          secure_token: string | null
           status: string
           store_id: string | null
           store_name: string
@@ -85,6 +86,7 @@ export type Database = {
           product_image?: string | null
           product_name: string
           product_price: number
+          secure_token?: string | null
           status?: string
           store_id?: string | null
           store_name: string
@@ -100,6 +102,7 @@ export type Database = {
           product_image?: string | null
           product_name?: string
           product_price?: number
+          secure_token?: string | null
           status?: string
           store_id?: string | null
           store_name?: string

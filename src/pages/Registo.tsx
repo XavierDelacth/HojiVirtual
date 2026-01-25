@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Eye, EyeOff, ShoppingBag, Store, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -8,6 +8,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 const Registo = () => {
   const navigate = useNavigate();
@@ -21,13 +22,50 @@ const Registo = () => {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [acceptTerms, setAcceptTerms] = useState(false);
 
+  // Check if user is already authenticated
+  useEffect(() => {
+    const checkSession = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        navigate("/dashboard", { replace: true });
+      }
+    };
+    checkSession();
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session) {
+        navigate("/dashboard", { replace: true });
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, [navigate]);
+
   const handleSubmit = async (e: React.FormEvent, type: 'vendor' | 'buyer') => {
     e.preventDefault();
     
+    if (!name.trim() || !email.trim() || !password.trim()) {
+      toast({
+        title: "Erro",
+        description: "Por favor, preencha todos os campos obrigatórios.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     if (password !== confirmPassword) {
       toast({
         title: "Erro",
         description: "As palavras-passe não coincidem",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (password.length < 6) {
+      toast({
+        title: "Erro",
+        description: "A palavra-passe deve ter pelo menos 6 caracteres.",
         variant: "destructive",
       });
       return;
@@ -44,16 +82,55 @@ const Registo = () => {
 
     setIsLoading(true);
     
-    setTimeout(() => {
-      setIsLoading(false);
+    const redirectUrl = `${window.location.origin}/`;
+
+    const { data, error } = await supabase.auth.signUp({
+      email: email.trim(),
+      password: password,
+      options: {
+        emailRedirectTo: redirectUrl,
+        data: {
+          name: name.trim(),
+          phone: phone.trim() ? `+244${phone.trim()}` : null,
+          account_type: type,
+        }
+      }
+    });
+
+    setIsLoading(false);
+
+    if (error) {
+      let errorMessage = "Ocorreu um erro ao criar a conta.";
+      
+      if (error.message.includes("already registered")) {
+        errorMessage = "Este email já está registado. Tente fazer login.";
+      } else if (error.message.includes("Password")) {
+        errorMessage = "A palavra-passe não cumpre os requisitos de segurança.";
+      }
+
+      toast({
+        title: "Erro",
+        description: errorMessage,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Check if email confirmation is required
+    if (data.user && !data.session) {
+      toast({
+        title: "Conta criada com sucesso!",
+        description: "Verifique o seu email para confirmar a conta.",
+      });
+      navigate("/login");
+    } else {
       toast({
         title: "Conta criada com sucesso!",
         description: type === 'vendor' 
           ? "Bem-vindo ao HojiVirtual! Configure a sua loja." 
           : "Bem-vindo ao HojiVirtual!",
       });
-      navigate(type === 'vendor' ? "/dashboard" : "/explorar");
-    }, 1000);
+    }
   };
 
   return (
@@ -120,6 +197,7 @@ const Registo = () => {
                         onChange={(e) => setName(e.target.value)}
                         className="h-12"
                         required
+                        autoComplete="name"
                       />
                     </div>
 
@@ -133,6 +211,7 @@ const Registo = () => {
                         onChange={(e) => setEmail(e.target.value)}
                         className="h-12"
                         required
+                        autoComplete="email"
                       />
                     </div>
 
@@ -149,7 +228,7 @@ const Registo = () => {
                           value={phone}
                           onChange={(e) => setPhone(e.target.value)}
                           className="h-12 flex-1"
-                          required
+                          autoComplete="tel"
                         />
                       </div>
                     </div>
@@ -165,6 +244,7 @@ const Registo = () => {
                           onChange={(e) => setPassword(e.target.value)}
                           className="h-12 pr-12"
                           required
+                          autoComplete="new-password"
                         />
                         <button
                           type="button"
@@ -187,6 +267,7 @@ const Registo = () => {
                           onChange={(e) => setConfirmPassword(e.target.value)}
                           className="h-12 pr-12"
                           required
+                          autoComplete="new-password"
                         />
                         <button
                           type="button"
@@ -229,6 +310,7 @@ const Registo = () => {
                         onChange={(e) => setName(e.target.value)}
                         className="h-12"
                         required
+                        autoComplete="name"
                       />
                     </div>
 
@@ -242,6 +324,7 @@ const Registo = () => {
                         onChange={(e) => setEmail(e.target.value)}
                         className="h-12"
                         required
+                        autoComplete="email"
                       />
                     </div>
 
@@ -258,7 +341,7 @@ const Registo = () => {
                           value={phone}
                           onChange={(e) => setPhone(e.target.value)}
                           className="h-12 flex-1"
-                          required
+                          autoComplete="tel"
                         />
                       </div>
                     </div>
@@ -274,6 +357,7 @@ const Registo = () => {
                           onChange={(e) => setPassword(e.target.value)}
                           className="h-12 pr-12"
                           required
+                          autoComplete="new-password"
                         />
                         <button
                           type="button"
@@ -296,6 +380,7 @@ const Registo = () => {
                           onChange={(e) => setConfirmPassword(e.target.value)}
                           className="h-12 pr-12"
                           required
+                          autoComplete="new-password"
                         />
                         <button
                           type="button"

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useParams, useSearchParams, Link } from "react-router-dom";
 import { CheckCircle2, Store, User, Package, Calendar, Loader2, AlertCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -19,6 +19,9 @@ interface Purchase {
 
 const Comprovativo = () => {
   const { id } = useParams();
+  const [searchParams] = useSearchParams();
+  const token = searchParams.get("token");
+  
   const [purchase, setPurchase] = useState<Purchase | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -31,25 +34,42 @@ const Comprovativo = () => {
         return;
       }
 
+      if (!token) {
+        setError("Token de acesso não fornecido");
+        setIsLoading(false);
+        return;
+      }
+
       try {
-        const { data, error: fetchError } = await supabase
-          .from("purchases")
-          .select("*")
-          .eq("id", id)
-          .maybeSingle();
+        // Use edge function to fetch receipt with token validation
+        const { data, error: fetchError } = await supabase.functions.invoke('get-receipt', {
+          body: null,
+          headers: {},
+        });
 
-        if (fetchError) {
-          console.error("Error fetching purchase:", fetchError);
-          setError("Erro ao carregar comprovativo");
+        // Use URL params for the edge function
+        const response = await fetch(
+          `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/get-receipt?id=${encodeURIComponent(id)}&token=${encodeURIComponent(token)}`,
+          {
+            method: 'GET',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+          }
+        );
+
+        const result = await response.json();
+
+        if (!response.ok) {
+          setError(result.error || "Comprovativo não encontrado");
           return;
         }
 
-        if (!data) {
+        if (result.purchase) {
+          setPurchase(result.purchase);
+        } else {
           setError("Comprovativo não encontrado");
-          return;
         }
-
-        setPurchase(data);
       } catch (err) {
         console.error("Error:", err);
         setError("Erro ao carregar comprovativo");
@@ -59,7 +79,7 @@ const Comprovativo = () => {
     };
 
     fetchPurchase();
-  }, [id]);
+  }, [id, token]);
 
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat('pt-AO').format(price);
