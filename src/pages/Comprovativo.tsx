@@ -1,9 +1,11 @@
 import { useEffect, useState, useRef } from "react";
 import { useParams, useSearchParams, Link } from "react-router-dom";
-import { Loader2, AlertCircle, Download, MessageCircle } from "lucide-react";
+import { Loader2, AlertCircle, Download, MessageCircle, CheckCircle2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { useToast } from "@/hooks/use-toast";
+import StarRating from "@/components/ratings/StarRating";
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
 
@@ -14,22 +16,32 @@ interface Purchase {
   product_name: string;
   product_price: number;
   store_name: string;
+  store_id: string | null;
+  product_id: string;
   product_image: string | null;
   status: string;
   created_at: string;
   validated_at: string | null;
+  buyer_id: string | null;
 }
 
 const Comprovativo = () => {
   const { id } = useParams();
   const [searchParams] = useSearchParams();
   const token = searchParams.get("token");
+  const { toast } = useToast();
   
   const [purchase, setPurchase] = useState<Purchase | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
   const receiptRef = useRef<HTMLDivElement>(null);
+  
+  // Rating state
+  const [userRating, setUserRating] = useState(0);
+  const [hasRated, setHasRated] = useState(false);
+  const [isSubmittingRating, setIsSubmittingRating] = useState(false);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 
   const handleGeneratePDF = async () => {
     if (!receiptRef.current || !purchase) return;
@@ -81,6 +93,33 @@ const Comprovativo = () => {
     window.open(`https://wa.me/?text=${encodedMessage}`, '_blank');
   };
 
+  // Check if user is logged in and has already rated
+  useEffect(() => {
+    const checkUserAndRating = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        setCurrentUserId(user.id);
+        
+        // Check if user has already rated this purchase
+        if (id) {
+          const { data: existingRating } = await supabase
+            .from("ratings")
+            .select("rating")
+            .eq("purchase_id", id)
+            .eq("buyer_id", user.id)
+            .maybeSingle();
+          
+          if (existingRating) {
+            setUserRating(existingRating.rating);
+            setHasRated(true);
+          }
+        }
+      }
+    };
+    
+    checkUserAndRating();
+  }, [id]);
+
   useEffect(() => {
     const fetchPurchase = async () => {
       if (!id) {
@@ -128,6 +167,43 @@ const Comprovativo = () => {
 
     fetchPurchase();
   }, [id, token]);
+
+  const handleSubmitRating = async () => {
+    if (!purchase || !currentUserId || userRating === 0) return;
+    
+    setIsSubmittingRating(true);
+    try {
+      const { error: ratingError } = await supabase
+        .from("ratings")
+        .insert({
+          purchase_id: purchase.id,
+          product_id: purchase.product_id,
+          store_id: purchase.store_id,
+          buyer_id: currentUserId,
+          rating: userRating,
+        });
+      
+      if (ratingError) {
+        console.error("Rating error:", ratingError);
+        toast({
+          title: "Erro",
+          description: "Não foi possível submeter a avaliação.",
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      setHasRated(true);
+      toast({
+        title: "Avaliação submetida!",
+        description: "Obrigado pelo seu feedback.",
+      });
+    } catch (err) {
+      console.error("Error submitting rating:", err);
+    } finally {
+      setIsSubmittingRating(false);
+    }
+  };
 
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat('pt-AO').format(price);
@@ -238,6 +314,48 @@ const Comprovativo = () => {
             </div>
           </div>
         </div>
+
+        {/* Rating Section - Only show if user is the buyer */}
+        {currentUserId && currentUserId === purchase.buyer_id && (
+          <CardContent className="p-6 pt-0">
+            <div className="p-4 bg-muted/30 rounded-lg border border-border">
+              <h3 className="font-semibold text-center mb-3">
+                {hasRated ? "A sua avaliação" : "Avalie este produto"}
+              </h3>
+              <div className="flex justify-center mb-3">
+                <StarRating
+                  rating={userRating}
+                  onRatingChange={setUserRating}
+                  readonly={hasRated}
+                  size="lg"
+                />
+              </div>
+              {hasRated ? (
+                <div className="flex items-center justify-center gap-2 text-accent">
+                  <CheckCircle2 className="w-4 h-4" />
+                  <span className="text-sm font-medium">Obrigado pela avaliação!</span>
+                </div>
+              ) : (
+                <Button
+                  variant="hero"
+                  size="sm"
+                  className="w-full"
+                  disabled={userRating === 0 || isSubmittingRating}
+                  onClick={handleSubmitRating}
+                >
+                  {isSubmittingRating ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      A submeter...
+                    </>
+                  ) : (
+                    "Submeter Avaliação"
+                  )}
+                </Button>
+              )}
+            </div>
+          </CardContent>
+        )}
 
         {/* Action Buttons - Outside printable area */}
         <CardContent className="p-6 pt-0 space-y-3">
