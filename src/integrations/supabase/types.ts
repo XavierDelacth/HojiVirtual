@@ -113,6 +113,44 @@ export type Database = {
         }
         Relationships: []
       }
+      ratings: {
+        Row: {
+          buyer_id: string
+          created_at: string
+          id: string
+          product_id: string
+          purchase_id: string
+          rating: number
+          store_id: string | null
+        }
+        Insert: {
+          buyer_id: string
+          created_at?: string
+          id?: string
+          product_id: string
+          purchase_id: string
+          rating: number
+          store_id?: string | null
+        }
+        Update: {
+          buyer_id?: string
+          created_at?: string
+          id?: string
+          product_id?: string
+          purchase_id?: string
+          rating?: number
+          store_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ratings_purchase_id_fkey"
+            columns: ["purchase_id"]
+            isOneToOne: true
+            referencedRelation: "purchases"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       profiles_store_public: {
