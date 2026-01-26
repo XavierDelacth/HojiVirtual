@@ -1,11 +1,28 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
+const allowedOrigins = [
+  'https://hoji-virtual-hub.lovable.app', // Production
+  'https://id-preview--67c1ebf9-9658-4656-9116-bc40282a5c0d.lovable.app', // Preview
+  'http://localhost:5173', // Development
+  'http://localhost:8080', // Development alternative
+];
+
+function getCorsHeaders(requestOrigin: string | null) {
+  const origin = requestOrigin || '';
+  return {
+    'Access-Control-Allow-Origin': allowedOrigins.includes(origin) ? origin : allowedOrigins[0],
+    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  };
+}
+
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
 Deno.serve(async (req) => {
+  const corsHeaders = getCorsHeaders(req.headers.get('origin'));
+  
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
