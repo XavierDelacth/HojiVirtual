@@ -1,23 +1,72 @@
-import { useState } from "react";
-import { Search, SlidersHorizontal, X } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Search, SlidersHorizontal, X, ShoppingBag, Star } from "lucide-react";
+import { Link } from "react-router-dom";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
-import ProductCard from "@/components/products/ProductCard";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { products, categories } from "@/data/mockData";
+import { Card, CardContent } from "@/components/ui/card";
+import { supabase } from "@/integrations/supabase/client";
+
+interface Product {
+  id: string;
+  name: string;
+  description: string | null;
+  price: number;
+  category: string;
+  images: string[];
+  stock: number;
+  seller_id: string;
+}
+
+const categories = [
+  "Roupas",
+  "Eletrônicos",
+  "Acessórios",
+  "Calçado",
+  "Beleza",
+  "Casa",
+  "Alimentação",
+  "Outros"
+];
 
 const Explorar = () => {
+  const [products, setProducts] = useState<Product[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [showFilters, setShowFilters] = useState(false);
 
+  const formatPrice = (price: number) => {
+    return new Intl.NumberFormat('pt-AO').format(price);
+  };
+
+  useEffect(() => {
+    const fetchProducts = async () => {
+      setIsLoading(true);
+      const { data, error } = await supabase
+        .from('products')
+        .select('*')
+        .eq('is_active', true)
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('Error fetching products:', error);
+      } else {
+        setProducts(data || []);
+      }
+      setIsLoading(false);
+    };
+
+    fetchProducts();
+  }, []);
+
   const filteredProducts = products.filter((product) => {
     const matchesSearch = product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      product.storeName.toLowerCase().includes(searchQuery.toLowerCase());
+      product.category.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesCategory = selectedCategories.length === 0 || 
       selectedCategories.includes(product.category);
     return matchesSearch && matchesCategory;
@@ -52,7 +101,7 @@ const Explorar = () => {
             <div className="relative flex-1">
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
               <Input
-                placeholder="Busque por produtos, lojas ou categorias..."
+                placeholder="Busque por produtos ou categorias..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-12 h-12 text-base"
@@ -155,19 +204,80 @@ const Explorar = () => {
                 </p>
               </div>
 
-              {filteredProducts.length > 0 ? (
+              {isLoading ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                  {[...Array(8)].map((_, i) => (
+                    <Card key={i} className="animate-pulse">
+                      <div className="aspect-square bg-muted" />
+                      <CardContent className="p-4">
+                        <div className="h-4 bg-muted rounded mb-2" />
+                        <div className="h-6 bg-muted rounded w-1/2" />
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              ) : filteredProducts.length > 0 ? (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                   {filteredProducts.map((product) => (
-                    <ProductCard key={product.id} product={product} />
+                    <Link to={`/produto/${product.id}`} key={product.id}>
+                      <Card className="overflow-hidden hover:shadow-lg transition-shadow cursor-pointer group">
+                        <div className="aspect-square relative overflow-hidden">
+                          <img
+                            src={product.images[0] || 'https://images.unsplash.com/photo-1595777457583-95e059d581b8?w=400'}
+                            alt={product.name}
+                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                          />
+                          {product.stock < 5 && product.stock > 0 && (
+                            <Badge className="absolute top-3 right-3 bg-secondary text-secondary-foreground">
+                              Últimas unidades
+                            </Badge>
+                          )}
+                          {product.stock === 0 && (
+                            <Badge className="absolute top-3 right-3 bg-destructive text-destructive-foreground">
+                              Esgotado
+                            </Badge>
+                          )}
+                          <Badge className="absolute top-3 left-3 bg-muted text-muted-foreground">
+                            {product.category}
+                          </Badge>
+                        </div>
+                        <CardContent className="p-4">
+                          <h3 className="font-semibold mb-2 line-clamp-1">{product.name}</h3>
+                          <div className="flex items-center justify-between">
+                            <p className="text-primary font-bold text-lg">
+                              {formatPrice(product.price)} Kz
+                            </p>
+                            <div className="flex items-center gap-1 text-sm text-muted-foreground">
+                              <Star className="w-4 h-4 fill-secondary text-secondary" />
+                              <span>Novo</span>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    </Link>
                   ))}
                 </div>
               ) : (
                 <div className="text-center py-16">
-                  <div className="text-6xl mb-4">🔍</div>
+                  <ShoppingBag className="w-16 h-16 mx-auto text-muted-foreground mb-4" />
                   <h3 className="text-xl font-semibold mb-2">Nenhum produto encontrado</h3>
-                  <p className="text-muted-foreground">
-                    Tente ajustar os filtros ou buscar por outro termo
+                  <p className="text-muted-foreground mb-4">
+                    {searchQuery || selectedCategories.length > 0
+                      ? "Tente ajustar os filtros ou buscar por outro termo"
+                      : "Os vendedores ainda não adicionaram produtos"
+                    }
                   </p>
+                  {(searchQuery || selectedCategories.length > 0) && (
+                    <Button 
+                      variant="outline" 
+                      onClick={() => {
+                        setSearchQuery("");
+                        setSelectedCategories([]);
+                      }}
+                    >
+                      Limpar filtros
+                    </Button>
+                  )}
                 </div>
               )}
             </div>

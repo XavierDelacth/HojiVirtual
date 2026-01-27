@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { 
   LayoutDashboard, 
@@ -20,7 +20,7 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 const menuItems = [
-  { icon: LayoutDashboard, label: "Dashboard", path: "/dashboard" },
+  { icon: LayoutDashboard, label: "Dashboard", path: "/dashboard/vendedor" },
   { icon: Store, label: "Minha Loja", path: "/dashboard/minha-loja" },
   { icon: Package, label: "Produtos", path: "/dashboard/produtos" },
   { icon: QrCode, label: "QR Codes", path: "/dashboard/qrcodes" },
@@ -32,24 +32,17 @@ const DashboardSidebar = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { signOut } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const handleLogout = async () => {
     try {
-      const { error } = await supabase.auth.signOut();
-      if (error) {
-        toast({
-          title: "Erro ao sair",
-          description: "Não foi possível terminar a sessão.",
-          variant: "destructive",
-        });
-      } else {
-        navigate("/", { replace: true });
-        toast({
-          title: "Sessão terminada",
-          description: "Você saiu com sucesso.",
-        });
-      }
+      await signOut();
+      navigate("/", { replace: true });
+      toast({
+        title: "Sessão terminada",
+        description: "Você saiu com sucesso.",
+      });
     } catch (err) {
       console.error("Logout error:", err);
       toast({
