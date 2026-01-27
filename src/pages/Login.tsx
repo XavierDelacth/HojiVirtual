@@ -17,21 +17,43 @@ const Login = () => {
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
+  const redirectBasedOnRole = async (userId: string) => {
+    const { data } = await supabase
+      .from('user_roles')
+      .select('role')
+      .eq('user_id', userId)
+      .maybeSingle();
+
+    const from = (location.state as { from?: { pathname: string } })?.from?.pathname;
+    
+    if (from && from !== '/login' && from !== '/registo') {
+      navigate(from, { replace: true });
+      return;
+    }
+
+    if (data?.role === 'seller') {
+      navigate("/dashboard/vendedor", { replace: true });
+    } else {
+      navigate("/dashboard/utilizador", { replace: true });
+    }
+  };
+
   // Check if user is already authenticated
   useEffect(() => {
     const checkSession = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (session) {
-        const from = (location.state as { from?: { pathname: string } })?.from?.pathname || "/dashboard";
-        navigate(from, { replace: true });
+        redirectBasedOnRole(session.user.id);
       }
     };
     checkSession();
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       if (session) {
-        const from = (location.state as { from?: { pathname: string } })?.from?.pathname || "/dashboard";
-        navigate(from, { replace: true });
+        // Defer to prevent deadlock
+        setTimeout(() => {
+          redirectBasedOnRole(session.user.id);
+        }, 0);
       }
     });
 

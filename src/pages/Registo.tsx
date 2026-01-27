@@ -27,14 +27,38 @@ const Registo = () => {
     const checkSession = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (session) {
-        navigate("/dashboard", { replace: true });
+        // Check user role and redirect accordingly
+        const { data } = await supabase
+          .from('user_roles')
+          .select('role')
+          .eq('user_id', session.user.id)
+          .maybeSingle();
+        
+        if (data?.role === 'seller') {
+          navigate("/dashboard/vendedor", { replace: true });
+        } else {
+          navigate("/dashboard/utilizador", { replace: true });
+        }
       }
     };
     checkSession();
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
       if (session) {
-        navigate("/dashboard", { replace: true });
+        // Defer to prevent deadlock
+        setTimeout(async () => {
+          const { data } = await supabase
+            .from('user_roles')
+            .select('role')
+            .eq('user_id', session.user.id)
+            .maybeSingle();
+          
+          if (data?.role === 'seller') {
+            navigate("/dashboard/vendedor", { replace: true });
+          } else {
+            navigate("/dashboard/utilizador", { replace: true });
+          }
+        }, 0);
       }
     });
 
@@ -83,6 +107,7 @@ const Registo = () => {
     setIsLoading(true);
     
     const redirectUrl = `${window.location.origin}/`;
+    const roleValue = type === 'vendor' ? 'seller' : 'user';
 
     const { data, error } = await supabase.auth.signUp({
       email: email.trim(),
@@ -97,9 +122,8 @@ const Registo = () => {
       }
     });
 
-    setIsLoading(false);
-
     if (error) {
+      setIsLoading(false);
       let errorMessage = "Ocorreu um erro ao criar a conta.";
       
       if (error.message.includes("already registered")) {
@@ -116,6 +140,19 @@ const Registo = () => {
       return;
     }
 
+    // Insert user role after successful signup
+    if (data.user) {
+      const { error: roleError } = await supabase
+        .from('user_roles')
+        .insert({ user_id: data.user.id, role: roleValue });
+
+      if (roleError) {
+        console.error('Error inserting role:', roleError);
+      }
+    }
+
+    setIsLoading(false);
+
     // Check if email confirmation is required
     if (data.user && !data.session) {
       toast({
@@ -130,6 +167,12 @@ const Registo = () => {
           ? "Bem-vindo ao HojiVirtual! Configure a sua loja." 
           : "Bem-vindo ao HojiVirtual!",
       });
+      // Redirect based on role
+      if (type === 'vendor') {
+        navigate("/dashboard/vendedor");
+      } else {
+        navigate("/dashboard/utilizador");
+      }
     }
   };
 
