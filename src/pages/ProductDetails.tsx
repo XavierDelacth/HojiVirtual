@@ -11,6 +11,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { stores, reviews, paymentMethods } from "@/data/mockData";
+import { resolveBankData } from '@/lib/resolveBankData';
 import { useProducts } from "@/hooks/useProducts";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -27,76 +28,26 @@ const ProductDetails = () => {
   const { allProducts } = useProducts();
   const product = allProducts.find(p => String(p.id) === String(id));
   const [storeData, setStoreData] = useState<any | null>(null);
+  const sellerId = product?.sellerId || (String(product?.storeId || '').startsWith('store_') ? String(product?.storeId).replace(/^store_/, '') : undefined);
 
   useEffect(() => {
-    const loadStore = async () => {
-      if (!product) {
-        setStoreData(null);
-        return;
-      }
-
-      // Primeiro, tentar encontrar entre stores mockados
-      const mock = stores.find((s) => s.id === product.storeId);
-      if (mock) {
-        setStoreData(mock);
-        return;
-      }
-
-      // Se for produto dinâmico, pode ter sellerId
-      const sellerId = (product as any).sellerId as string | undefined;
-      if (sellerId) {
-        try {
-          const { data: profile, error } = await supabase
-            .from('profiles')
-            .select('*')
-            .eq('user_id', sellerId)
-            .maybeSingle();
-
-          if (!error && profile) {
-            setStoreData({
-              id: `store_${sellerId}`,
-              name: profile.store_name || profile.store_name || 'Loja do Vendedor',
-              owner: profile.name || profile.owner,
-              location: profile.location,
-              image: profile.avatar_url || '',
-              rating: profile.rating || 0,
-              reviewCount: profile.reviewCount || 0,
-              iban: profile.iban,
-              bank: profile.bankName || profile.bank || undefined,
-            });
-            return;
-          }
-        } catch (e) {
-          console.error('Erro ao carregar perfil do vendedor:', e);
-        }
-
-        // fallback localStorage
-        try {
-          const raw = localStorage.getItem(`hoji_profile_${sellerId}`);
-          if (raw) {
-            const p = JSON.parse(raw);
-            setStoreData({
-              id: `store_${sellerId}`,
-              name: p.store_name || 'Loja do Vendedor',
-              owner: p.name,
-              location: p.location,
-              image: p.avatar_url || '',
-              rating: 0,
-              reviewCount: 0,
-              iban: p.iban,
-              bank: p.bankName || p.bank,
-            });
-            return;
-          }
-        } catch (e) {
-          console.error('Erro ao ler perfil do armazenamento local:', e);
-        }
-      }
-
+    if (!product) {
       setStoreData(null);
-    };
+      return;
+    }
 
-    loadStore();
+    let mounted = true;
+    resolveBankData(product)
+      .then((res) => {
+        if (mounted) setStoreData(res);
+      })
+      .catch((e) => {
+        console.error('Erro ao resolver dados bancários:', e);
+      });
+
+    return () => {
+      mounted = false;
+    };
   }, [product]);
   const productReviews = reviews.filter(r => r.productId === id);
 
@@ -120,6 +71,16 @@ const ProductDetails = () => {
 
   const handlePurchase = async () => {
     if (!product || !storeData) return;
+
+    // Bloquear compra caso vendedor não tenha IBAN configurado
+    if (!storeData.iban) {
+      toast({
+        title: 'Dados bancários em falta',
+        description: 'O vendedor ainda não configurou o IBAN. Não é possível concluir a compra.',
+        variant: 'destructive',
+      });
+      return;
+    }
 
     setIsCreatingPurchase(true);
 
