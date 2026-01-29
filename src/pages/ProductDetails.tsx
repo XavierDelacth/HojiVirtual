@@ -1,7 +1,7 @@
 
 
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Star, MapPin, BadgeCheck, ArrowLeft, MessageCircle, ShoppingBag, Copy, CheckCircle2 } from "lucide-react";
 import Navbar from "@/components/layout/Navbar";
@@ -26,7 +26,78 @@ const ProductDetails = () => {
 
   const { allProducts } = useProducts();
   const product = allProducts.find(p => String(p.id) === String(id));
-  const store = stores.find(s => s.id === product?.storeId);
+  const [storeData, setStoreData] = useState<any | null>(null);
+
+  useEffect(() => {
+    const loadStore = async () => {
+      if (!product) {
+        setStoreData(null);
+        return;
+      }
+
+      // Primeiro, tentar encontrar entre stores mockados
+      const mock = stores.find((s) => s.id === product.storeId);
+      if (mock) {
+        setStoreData(mock);
+        return;
+      }
+
+      // Se for produto dinâmico, pode ter sellerId
+      const sellerId = (product as any).sellerId as string | undefined;
+      if (sellerId) {
+        try {
+          const { data: profile, error } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('user_id', sellerId)
+            .maybeSingle();
+
+          if (!error && profile) {
+            setStoreData({
+              id: `store_${sellerId}`,
+              name: profile.store_name || profile.store_name || 'Loja do Vendedor',
+              owner: profile.name || profile.owner,
+              location: profile.location,
+              image: profile.avatar_url || '',
+              rating: profile.rating || 0,
+              reviewCount: profile.reviewCount || 0,
+              iban: profile.iban,
+              bank: profile.bankName || profile.bank || undefined,
+            });
+            return;
+          }
+        } catch (e) {
+          console.error('Erro ao carregar perfil do vendedor:', e);
+        }
+
+        // fallback localStorage
+        try {
+          const raw = localStorage.getItem(`hoji_profile_${sellerId}`);
+          if (raw) {
+            const p = JSON.parse(raw);
+            setStoreData({
+              id: `store_${sellerId}`,
+              name: p.store_name || 'Loja do Vendedor',
+              owner: p.name,
+              location: p.location,
+              image: p.avatar_url || '',
+              rating: 0,
+              reviewCount: 0,
+              iban: p.iban,
+              bank: p.bankName || p.bank,
+            });
+            return;
+          }
+        } catch (e) {
+          console.error('Erro ao ler perfil do armazenamento local:', e);
+        }
+      }
+
+      setStoreData(null);
+    };
+
+    loadStore();
+  }, [product]);
   const productReviews = reviews.filter(r => r.productId === id);
 
   const formatPrice = (price: number) => {
@@ -48,7 +119,7 @@ const ProductDetails = () => {
   };
 
   const handlePurchase = async () => {
-    if (!product || !store) return;
+    if (!product || !storeData) return;
 
     setIsCreatingPurchase(true);
 
@@ -84,15 +155,15 @@ const ProductDetails = () => {
         product_id: product.id,
         product_name: product.name,
         product_price: product.price,
-        store_name: store.name,
-        store_id: store.id,
+        store_name: storeData.name,
+        store_id: storeData.id || product.storeId,
         buyer_id: user.id,
         buyer_name: buyerName,
         product_image: product.images[0],
         status: "pending",
-        iban: (store as any).iban,
-        bank: (store as any).bank,
-        seller_name: store.owner,
+        iban: storeData.iban,
+        bank: storeData.bank,
+        seller_name: storeData.owner || storeData.name,
         created_at: new Date().toISOString(),
       };
 
@@ -104,8 +175,8 @@ const ProductDetails = () => {
             buyer_name: buyerName,
             product_name: product.name,
             product_price: product.price,
-            store_name: store.name,
-            store_id: store.id,
+            store_name: storeData.name,
+            store_id: storeData.id || product.storeId,
             product_id: product.id,
             product_image: product.images[0],
             status: "pending",
@@ -142,6 +213,15 @@ const ProductDetails = () => {
 
   const handleGenerateReceipt = async () => {
     if (!purchaseData) return;
+
+    if (!purchaseData.iban) {
+      toast({
+        title: 'Dados bancários em falta',
+        description: 'O vendedor ainda não configurou os dados bancários.',
+        variant: 'destructive',
+      });
+      return;
+    }
 
     try {
       const html2canvas = (await import('html2canvas')).default;
@@ -337,27 +417,27 @@ const ProductDetails = () => {
                 <span className="text-xl text-muted-foreground ml-2">Kz</span>
               </div>
 
-              {store && (
+              {storeData && (
                 <Card>
                   <CardContent className="p-4">
                     <div className="flex items-center gap-4">
                       <img
-                        src={store.image}
-                        alt={store.name}
+                        src={storeData.image}
+                        alt={storeData.name}
                         className="w-14 h-14 rounded-xl object-cover"
                       />
                       <div className="flex-1">
                         <div className="flex items-center gap-2">
-                          <h3 className="font-semibold">{store.name}</h3>
-                          {store.verified && (
+                          <h3 className="font-semibold">{storeData.name}</h3>
+                          {storeData.verified && (
                             <BadgeCheck className="w-4 h-4 text-trust" />
                           )}
                         </div>
                         <div className="flex items-center gap-1 text-sm text-muted-foreground">
                           <Star className="w-3.5 h-3.5 fill-secondary text-secondary" />
-                          <span>{store.rating}</span>
+                          <span>{storeData.rating}</span>
                           <span>•</span>
-                          <span>{store.reviewCount} avaliações</span>
+                          <span>{storeData.reviewCount} avaliações</span>
                         </div>
                       </div>
                       <Button variant="outline" size="sm">Ver Loja</Button>
@@ -370,7 +450,7 @@ const ProductDetails = () => {
                 <MapPin className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
                 <div>
                   <p className="font-medium">Localização</p>
-                  <p className="text-sm text-muted-foreground">{store?.location}</p>
+                  <p className="text-sm text-muted-foreground">{storeData?.location}</p>
                 </div>
               </div>
 
@@ -491,34 +571,34 @@ const ProductDetails = () => {
               </div>
             </div>
 
-            {store && (
+            {storeData && (
               <div className="space-y-4 bg-primary/5 p-4 rounded-xl border border-primary/20">
                 <h3 className="font-semibold text-base">Dados Bancários do Vendedor</h3>
                 
                 <div>
                   <p className="text-xs text-muted-foreground mb-1">Titular da Conta</p>
-                  <p className="font-medium">{store.owner}</p>
+                  <p className="font-medium">{storeData.owner || storeData.name}</p>
                 </div>
 
-                {(store as any).bank && (
+                {(storeData as any).bank && (
                   <div>
                     <p className="text-xs text-muted-foreground mb-1">Banco</p>
-                    <p className="font-medium">{(store as any).bank}</p>
+                    <p className="font-medium">{(storeData as any).bank}</p>
                   </div>
                 )}
 
-                {(store as any).iban && (
+                {(storeData as any).iban && (
                   <div>
                     <p className="text-xs text-muted-foreground mb-2">IBAN</p>
                     <div className="flex items-center gap-2 bg-background p-3 rounded-lg border border-border">
                       <code className="font-mono text-sm font-bold flex-1 break-all">
-                        {(store as any).iban}
+                        {(storeData as any).iban}
                       </code>
                       <Button
                         type="button"
                         variant="outline"
                         size="sm"
-                        onClick={() => copyToClipboard((store as any).iban!)}
+                        onClick={() => copyToClipboard((storeData as any).iban!)}
                         className="flex-shrink-0"
                       >
                         {copiedIBAN ? (

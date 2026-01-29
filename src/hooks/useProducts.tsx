@@ -20,6 +20,8 @@ export interface DynamicProduct {
   featured: boolean;
   // Marca que é produto criado dinamicamente (não mockado)
   isDynamic: true;
+  // ID do utilizador vendedor (quando aplicável)
+  sellerId?: string;
 }
 
 export interface Product extends DynamicProduct {}

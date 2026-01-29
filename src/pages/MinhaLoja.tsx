@@ -39,6 +39,9 @@ interface ProfileData {
   email: string | null;
   bio: string | null;
   avatar_url: string | null;
+  accountHolder?: string | null;
+  bankName?: string | null;
+  iban?: string | null;
 }
 
 interface ProductStoreData {
@@ -55,6 +58,7 @@ interface ProductStoreData {
   reviewCount: number;
   featured: boolean;
   isDynamic: true;
+  sellerId?: string;
 }
 
 const MinhaLinha = () => {
@@ -104,8 +108,8 @@ const MinhaLinha = () => {
   // 🎯 Carregar produtos da loja quando profile mudar
   useEffect(() => {
     if (user && profile) {
-      // Gerar storeId baseado no user ID (consistente)
-      const storeId = `store_${user.id.slice(0, 8)}`;
+      // Gerar storeId baseado no user ID completo (consistente com handleAddProduct)
+      const storeId = `store_${user.id}`;
       
       // Obter produtos da loja do contexto global
       const storeProds = getStoreProducts(storeId) as ProductStoreData[];
@@ -127,8 +131,7 @@ const MinhaLinha = () => {
       toast.error('Erro: Não foi possível identificar o utilizador');
       return;
     }
-
-    const storeId = `store_${user.id.slice(0, 8)}`;
+    const storeId = `store_${user.id}`;
     const storeName = profile.store_name || "Minha Loja";
 
     // Criar novo produto com ID único
@@ -146,6 +149,7 @@ const MinhaLinha = () => {
       ],
       storeId: storeId,
       storeName: storeName,
+      sellerId: user.id,
       rating: 5,
       reviewCount: 0,
       featured: false,

@@ -21,6 +21,9 @@ interface ProfileData {
   email: string;
   bio: string;
   avatar_url: string;
+  accountHolder?: string;
+  bankName?: string;
+  iban?: string;
 }
 
 interface EditProfileModalProps {
@@ -39,6 +42,9 @@ const EditProfileModal = ({ open, onOpenChange, onSave }: EditProfileModalProps)
     email: "",
     bio: "",
     avatar_url: "",
+    accountHolder: "",
+    bankName: "",
+    iban: "",
   });
   const [avatarPreview, setAvatarPreview] = useState<string>("");
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -71,12 +77,60 @@ const EditProfileModal = ({ open, onOpenChange, onSave }: EditProfileModalProps)
 
     if (error) {
       console.error("Error fetching profile:", error);
-      toast({
-        title: "Erro",
-        description: "Não foi possível carregar o perfil.",
-        variant: "destructive",
-      });
+      // Carregar do localStorage como fallback
+      try {
+        const raw = localStorage.getItem(`hoji_profile_${user.id}`);
+        if (raw) {
+          const profileLocal = JSON.parse(raw);
+          setFormData({
+            name: profileLocal.name || "",
+            store_name: profileLocal.store_name || "",
+            store_description: profileLocal.store_description || "",
+            location: profileLocal.location || "",
+            phone: profileLocal.phone || "",
+            email: profileLocal.email || "",
+            bio: profileLocal.bio || "",
+            avatar_url: profileLocal.avatar_url || "",
+            accountHolder: profileLocal.accountHolder || "",
+            bankName: profileLocal.bankName || "",
+            iban: profileLocal.iban || "",
+          });
+          setAvatarPreview(profileLocal.avatar_url || "");
+          toast({
+            title: "Aviso",
+            description: "Perfil carregado do armazenamento local.",
+          });
+        }
+      } catch (e) {
+        console.error('Erro ao carregar perfil do armazenamento local', e);
+        toast({
+          title: "Erro",
+          description: "Não foi possível carregar o perfil.",
+          variant: "destructive",
+        });
+      }
     } else if (profile) {
+      // Se houver sucesso, atualizar formData com os dados do Supabase
+      // e mesclar com dados bancários do localStorage
+      let bankDataFromLocal = {
+        accountHolder: "",
+        bankName: "",
+        iban: "",
+      };
+      try {
+        const raw = localStorage.getItem(`hoji_profile_${user.id}`);
+        if (raw) {
+          const profileLocal = JSON.parse(raw);
+          bankDataFromLocal = {
+            accountHolder: profileLocal.accountHolder || "",
+            bankName: profileLocal.bankName || "",
+            iban: profileLocal.iban || "",
+          };
+        }
+      } catch (e) {
+        console.error('Erro ao carregar dados bancários do localStorage', e);
+      }
+
       setFormData({
         name: profile.name || "",
         store_name: profile.store_name || "",
@@ -86,8 +140,35 @@ const EditProfileModal = ({ open, onOpenChange, onSave }: EditProfileModalProps)
         email: profile.email || "",
         bio: profile.bio || "",
         avatar_url: profile.avatar_url || "",
+        accountHolder: bankDataFromLocal.accountHolder,
+        bankName: bankDataFromLocal.bankName,
+        iban: bankDataFromLocal.iban,
       });
       setAvatarPreview(profile.avatar_url || "");
+    } else {
+      // Se não houver erro, mas também não houver dados (novo utilizador), tentar localStorage
+      try {
+        const raw = localStorage.getItem(`hoji_profile_${user.id}`);
+        if (raw) {
+          const profileLocal = JSON.parse(raw);
+          setFormData({
+            name: profileLocal.name || "",
+            store_name: profileLocal.store_name || "",
+            store_description: profileLocal.store_description || "",
+            location: profileLocal.location || "",
+            phone: profileLocal.phone || "",
+            email: profileLocal.email || "",
+            bio: profileLocal.bio || "",
+            avatar_url: profileLocal.avatar_url || "",
+            accountHolder: profileLocal.accountHolder || "",
+            bankName: profileLocal.bankName || "",
+            iban: profileLocal.iban || "",
+          });
+          setAvatarPreview(profileLocal.avatar_url || "");
+        }
+      } catch (e) {
+        console.error('Erro ao carregar perfil do armazenamento local', e);
+      }
     }
     
     setIsLoading(false);
@@ -164,7 +245,29 @@ const EditProfileModal = ({ open, onOpenChange, onSave }: EditProfileModalProps)
       }
     }
 
-    // Update profile in database
+    // Validações dos dados bancários
+    if (!formData.accountHolder || !formData.bankName || !formData.iban) {
+      toast({
+        title: 'Dados bancários incompletos',
+        description: 'Preencha Titular da Conta, Banco e IBAN (obrigatório).',
+        variant: 'destructive',
+      });
+      setIsSaving(false);
+      return;
+    }
+
+    // IBAN Angola (AO) - validar prefixo
+    if (!String(formData.iban).toUpperCase().startsWith('AO')) {
+      toast({
+        title: 'IBAN inválido',
+        description: 'O IBAN deve começar com AO (Angola).',
+        variant: 'destructive',
+      });
+      setIsSaving(false);
+      return;
+    }
+
+    // Update profile in database (sem campos bancários enquanto schema não for atualizado)
     const { error } = await supabase
       .from('profiles')
       .update({
@@ -181,16 +284,112 @@ const EditProfileModal = ({ open, onOpenChange, onSave }: EditProfileModalProps)
 
     if (error) {
       console.error("Error updating profile:", error);
-      toast({
-        title: "Erro",
-        description: "Não foi possível salvar as alterações.",
-        variant: "destructive",
-      });
+      // Tentar upsert como fallback (caso a linha não exista)
+      try {
+        const upsertPayload = {
+          user_id: user.id,
+          name: formData.name,
+          store_name: formData.store_name,
+          store_description: formData.store_description,
+          location: formData.location,
+          phone: formData.phone,
+          email: formData.email,
+          bio: formData.bio,
+          avatar_url: avatarUrl,
+        };
+
+        const { error: upsertError } = await supabase
+          .from('profiles')
+          .upsert(upsertPayload, { onConflict: 'user_id' });
+
+        if (!upsertError) {
+          toast({
+            title: "Perfil atualizado",
+            description: "Suas alterações foram salvas (upsert).",
+          });
+          try {
+            localStorage.setItem(`hoji_profile_${user.id}`, JSON.stringify(upsertPayload));
+          } catch (e) {
+            console.error('Falha ao persistir perfil localmente', e);
+          }
+          onSave?.();
+          onOpenChange(false);
+        } else {
+          // Se upsert também falhar, persistir localmente e informar o utilizador
+          console.error('Upsert falhou:', upsertError);
+          try {
+            localStorage.setItem(`hoji_profile_${user.id}`, JSON.stringify({
+              name: formData.name,
+              store_name: formData.store_name,
+              store_description: formData.store_description,
+              location: formData.location,
+              phone: formData.phone,
+              email: formData.email,
+              bio: formData.bio,
+              avatar_url: avatarUrl,
+              accountHolder: formData.accountHolder,
+              bankName: formData.bankName,
+              iban: formData.iban,
+            }));
+          } catch (e) {
+            console.error('Falha ao persistir perfil localmente', e);
+          }
+          toast({
+            title: "Salvo localmente",
+            description: "Backend indisponível — alterações guardadas localmente.",
+          });
+          onSave?.();
+          onOpenChange(false);
+        }
+      } catch (e) {
+        console.error('Erro no upsert/fallback:', e);
+        try {
+          localStorage.setItem(`hoji_profile_${user.id}`, JSON.stringify({
+            name: formData.name,
+            store_name: formData.store_name,
+            store_description: formData.store_description,
+            location: formData.location,
+            phone: formData.phone,
+            email: formData.email,
+            bio: formData.bio,
+            avatar_url: avatarUrl,
+            accountHolder: formData.accountHolder,
+            bankName: formData.bankName,
+            iban: formData.iban,
+          }));
+        } catch (e2) {
+          console.error('Falha ao persistir perfil localmente', e2);
+        }
+        toast({
+          title: "Salvo localmente",
+          description: "Backend indisponível — alterações guardadas localmente.",
+        });
+        onSave?.();
+        onOpenChange(false);
+      }
     } else {
       toast({
         title: "Perfil atualizado",
         description: "Suas alterações foram salvas com sucesso!",
       });
+      // Persistir perfil local como fallback
+      try {
+        localStorage.setItem(`hoji_profile_${user.id}`, JSON.stringify({
+          name: formData.name,
+          store_name: formData.store_name,
+          store_description: formData.store_description,
+          location: formData.location,
+          phone: formData.phone,
+          email: formData.email,
+          bio: formData.bio,
+          avatar_url: avatarUrl,
+          accountHolder: formData.accountHolder,
+          bankName: formData.bankName,
+          iban: formData.iban,
+        }));
+      } catch (e) {
+        console.error('Falha ao persistir perfil localmente', e);
+      }
       onSave?.();
       onOpenChange(false);
     }
@@ -319,6 +518,39 @@ const EditProfileModal = ({ open, onOpenChange, onSave }: EditProfileModalProps)
                     maxLength={1000}
                   />
                 </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="accountHolder">Titular da Conta (IBAN)</Label>
+                    <Input
+                      id="accountHolder"
+                      value={formData.accountHolder}
+                      onChange={(e) => setFormData({ ...formData, accountHolder: e.target.value })}
+                      placeholder="Nome do titular da conta"
+                      maxLength={100}
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="bankName">Banco</Label>
+                    <Input
+                      id="bankName"
+                      value={formData.bankName}
+                      onChange={(e) => setFormData({ ...formData, bankName: e.target.value })}
+                      placeholder="Nome do banco"
+                      maxLength={100}
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="iban">IBAN (começa com AO)</Label>
+                    <Input
+                      id="iban"
+                      value={formData.iban}
+                      onChange={(e) => setFormData({ ...formData, iban: e.target.value })}
+                      placeholder="AO..."
+                      maxLength={34}
+                    />
+                  </div>
 
                 <div className="space-y-2">
                   <Label htmlFor="location">Localização</Label>
