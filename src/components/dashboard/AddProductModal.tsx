@@ -1,11 +1,12 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ImagePlus } from "lucide-react";
+import { ImagePlus, X } from "lucide-react";
+import { toast } from "sonner";
 
 interface AddProductModalProps {
   open: boolean;
@@ -19,6 +20,7 @@ interface ProductFormData {
   price: number;
   category: string;
   stock: number;
+  images?: string[];
 }
 
 const categories = [
@@ -31,33 +33,150 @@ const categories = [
 ];
 
 const AddProductModal = ({ open, onOpenChange, onAdd }: AddProductModalProps) => {
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [formData, setFormData] = useState<ProductFormData>({
     name: "",
     description: "",
     price: 0,
     category: "",
-    stock: 1
+    stock: 1,
+    images: []
   });
+  const [imagePreviews, setImagePreviews] = useState<string[]>([]);
+
+  const handleImageClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    
+    files.forEach((file) => {
+      // Validar tipo de arquivo
+      if (!file.type.startsWith('image/')) {
+        toast.error('Apenas imagens são permitidas');
+        return;
+      }
+
+      // Validar tamanho (máx 5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        toast.error('Imagem deve ter no máximo 5MB');
+        return;
+      }
+
+      // Converter para base64
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const base64 = reader.result as string;
+        setImagePreviews(prev => [...prev, base64]);
+        setFormData(prev => ({
+          ...prev,
+          images: [...(prev.images || []), base64]
+        }));
+      };
+      reader.readAsDataURL(file);
+    });
+
+    // Limpar input
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+  const removeImage = (index: number) => {
+    setImagePreviews(prev => prev.filter((_, i) => i !== index));
+    setFormData(prev => ({
+      ...prev,
+      images: prev.images?.filter((_, i) => i !== index) || []
+    }));
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Validações
+    if (!formData.name.trim()) {
+      toast.error('Nome do produto é obrigatório');
+      return;
+    }
+    if (!formData.description.trim()) {
+      toast.error('Descrição é obrigatória');
+      return;
+    }
+    if (formData.price <= 0) {
+      toast.error('Preço deve ser maior que 0');
+      return;
+    }
+    if (!formData.category) {
+      toast.error('Selecione uma categoria');
+      return;
+    }
+    if (imagePreviews.length === 0) {
+      toast.error('Adicione pelo menos uma imagem');
+      return;
+    }
+
     onAdd(formData);
-    setFormData({ name: "", description: "", price: 0, category: "", stock: 1 });
+    setFormData({ name: "", description: "", price: 0, category: "", stock: 1, images: [] });
+    setImagePreviews([]);
     onOpenChange(false);
   };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[500px]">
+      <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Adicionar Novo Produto</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
-          {/* Image Upload Placeholder */}
-          <div className="border-2 border-dashed border-border rounded-lg p-8 text-center hover:border-primary/50 transition-colors cursor-pointer">
-            <ImagePlus className="w-10 h-10 mx-auto text-muted-foreground" />
-            <p className="mt-2 text-sm text-muted-foreground">Clique para adicionar imagens</p>
+          {/* Image Upload */}
+          <div>
+            <Label className="mb-2 block">Imagens do Produto</Label>
+            {imagePreviews.length === 0 ? (
+              <div 
+                onClick={handleImageClick}
+                className="border-2 border-dashed border-border rounded-lg p-8 text-center hover:border-primary/50 transition-colors cursor-pointer"
+              >
+                <ImagePlus className="w-10 h-10 mx-auto text-muted-foreground" />
+                <p className="mt-2 text-sm text-muted-foreground">Clique para adicionar imagens</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-3 gap-2">
+                {imagePreviews.map((img, idx) => (
+                  <div key={idx} className="relative group">
+                    <img
+                      src={img}
+                      alt={`Preview ${idx}`}
+                      className="w-full h-24 object-cover rounded-lg"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => removeImage(idx)}
+                      className="absolute top-1 right-1 bg-destructive text-white p-1 rounded opacity-0 group-hover:opacity-100 transition-opacity"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                ))}
+                <button
+                  type="button"
+                  onClick={handleImageClick}
+                  className="border-2 border-dashed border-border rounded-lg p-4 text-center hover:border-primary/50 transition-colors flex items-center justify-center"
+                >
+                  <ImagePlus className="w-6 h-6 text-muted-foreground" />
+                </button>
+              </div>
+            )}
+            <input
+              ref={fileInputRef}
+              type="file"
+              multiple
+              accept="image/*"
+              onChange={handleImageChange}
+              className="hidden"
+            />
           </div>
+
 
           <div className="space-y-2">
             <Label htmlFor="productName">Nome do Produto</Label>

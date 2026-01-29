@@ -26,6 +26,7 @@ import {
   BarChart3,
   Edit,
   Plus,
+  Trash2,
   Loader2
 } from "lucide-react";
 import { products } from "@/data/mockData";
@@ -126,6 +127,7 @@ const MinhaLinha = () => {
     price: number;
     category: string;
     stock: number;
+    images?: string[];
   }) => {
     if (!user || !profile) {
       toast.error('Erro: Não foi possível identificar o utilizador');
@@ -142,8 +144,8 @@ const MinhaLinha = () => {
       price: formData.price,
       stock: formData.stock,
       category: formData.category,
-      // Imagens placeholder - pode ser melhorado depois
-      images: [
+      // Usar imagens do formulário ou placeholders
+      images: formData.images && formData.images.length > 0 ? formData.images : [
         'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=500&h=500&fit=crop',
         'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=500&h=500&fit=crop'
       ],
@@ -164,6 +166,13 @@ const MinhaLinha = () => {
 
     toast.success(`✅ Produto "${formData.name}" criado com sucesso!`);
     console.log(`✅ Novo produto adicionado: ${newProduct.id}`);
+  };
+
+  // 🗑️ Handler para eliminar produto
+  const handleDeleteProduct = (productId: string) => {
+    removeProduct(productId);
+    setStoreProducts(storeProducts.filter(p => p.id !== productId));
+    toast.success('✅ Produto eliminado com sucesso!');
   };
 
   // Use profile data or fallback to defaults
@@ -356,10 +365,20 @@ const MinhaLinha = () => {
                       <p className="text-lg font-bold text-primary mt-1">
                         {product.price.toLocaleString('pt-AO')} Kz
                       </p>
-                      <div className="flex items-center gap-1 mt-2">
-                        <Star className="w-3 h-3 fill-yellow-400 text-yellow-400" />
-                        <span className="text-sm">{product.rating}</span>
-                        <span className="text-xs text-muted-foreground">({product.reviewCount} avaliações)</span>
+                      <div className="flex items-center justify-between mt-2">
+                        <div className="flex items-center gap-1">
+                          <Star className="w-3 h-3 fill-yellow-400 text-yellow-400" />
+                          <span className="text-sm">{product.rating}</span>
+                          <span className="text-xs text-muted-foreground">({product.reviewCount})</span>
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleDeleteProduct(product.id)}
+                          className="text-destructive hover:bg-destructive/10"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
                       </div>
                     </CardContent>
                   </Card>

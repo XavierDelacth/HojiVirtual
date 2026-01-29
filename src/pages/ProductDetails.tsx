@@ -174,6 +174,16 @@ const ProductDetails = () => {
 
   const handleGenerateReceipt = async () => {
     if (!purchaseData) return;
+    // Ensure this purchase is saved so it appears in DashboardComprovativos
+    try {
+      const existing = JSON.parse(localStorage.getItem('hoji_purchases') || '[]');
+      if (!existing.find((p: any) => p.id === purchaseData.id)) {
+        existing.push(purchaseData);
+        localStorage.setItem('hoji_purchases', JSON.stringify(existing));
+      }
+    } catch (e) {
+      console.error('Erro ao guardar comprovativo localmente antes do PDF:', e);
+    }
 
     if (!purchaseData.iban) {
       toast({

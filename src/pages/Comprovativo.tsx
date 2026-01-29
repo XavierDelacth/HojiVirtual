@@ -250,148 +250,150 @@ const Comprovativo = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-accent/10 via-background to-primary/10 flex items-center justify-center p-4">
-      <Card className="max-w-md w-full overflow-hidden shadow-2xl">
-        {/* Printable Receipt Content */}
-        <div ref={receiptRef} style={{ backgroundColor: "#ffffff" }}>
-          <div className="p-6">
-            {/* Receipt Table */}
-            <div className="border border-border rounded-lg overflow-hidden">
-              <table className="w-full">
-                <tbody>
-                  <tr className="border-b border-border">
-                    <td className="px-4 py-3 bg-muted/50 font-medium text-sm text-muted-foreground w-2/5">
-                      Nome do Produto
-                    </td>
-                    <td className="px-4 py-3 font-semibold text-foreground">
-                      {purchase.product_name}
-                    </td>
-                  </tr>
-                  <tr className="border-b border-border">
-                    <td className="px-4 py-3 bg-muted/50 font-medium text-sm text-muted-foreground">
-                      Nome do Comprador
-                    </td>
-                    <td className="px-4 py-3 font-semibold text-foreground">
-                      {purchase.buyer_name}
-                    </td>
-                  </tr>
-                  <tr className="border-b border-border">
-                    <td className="px-4 py-3 bg-muted/50 font-medium text-sm text-muted-foreground">
-                      Nome da Loja
-                    </td>
-                    <td className="px-4 py-3 font-semibold text-foreground">
-                      {purchase.store_name}
-                    </td>
-                  </tr>
-                  <tr className="border-b border-border">
-                    <td className="px-4 py-3 bg-muted/50 font-medium text-sm text-muted-foreground">
-                      Data da Compra
-                    </td>
-                    <td className="px-4 py-3 font-semibold text-foreground">
-                      {formatDate(purchase.created_at)}
-                    </td>
-                  </tr>
-                  <tr>
-                    <td className="px-4 py-3 bg-muted/50 font-medium text-sm text-muted-foreground">
-                      ID da Transação
-                    </td>
-                    <td className="px-4 py-3 font-mono font-semibold text-primary">
-                      {purchase.id.slice(0, 8).toUpperCase()}
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
+    <div className="min-h-screen bg-gradient-to-br from-accent/10 via-background to-primary/10 flex items-center justify-center p-4 py-8">
+      <div className="max-w-md w-full">
+        <Card className="overflow-hidden shadow-2xl">
+          {/* Printable Receipt Content */}
+          <div ref={receiptRef} style={{ backgroundColor: "#ffffff" }}>
+            <div className="p-6">
+              {/* Receipt Table */}
+              <div className="border border-border rounded-lg overflow-hidden">
+                <table className="w-full">
+                  <tbody>
+                    <tr className="border-b border-border">
+                      <td className="px-4 py-3 bg-muted/50 font-medium text-sm text-muted-foreground w-2/5">
+                        Nome do Produto
+                      </td>
+                      <td className="px-4 py-3 font-semibold text-foreground">
+                        {purchase.product_name}
+                      </td>
+                    </tr>
+                    <tr className="border-b border-border">
+                      <td className="px-4 py-3 bg-muted/50 font-medium text-sm text-muted-foreground">
+                        Nome do Comprador
+                      </td>
+                      <td className="px-4 py-3 font-semibold text-foreground">
+                        {purchase.buyer_name}
+                      </td>
+                    </tr>
+                    <tr className="border-b border-border">
+                      <td className="px-4 py-3 bg-muted/50 font-medium text-sm text-muted-foreground">
+                        Nome da Loja
+                      </td>
+                      <td className="px-4 py-3 font-semibold text-foreground">
+                        {purchase.store_name}
+                      </td>
+                    </tr>
+                    <tr className="border-b border-border">
+                      <td className="px-4 py-3 bg-muted/50 font-medium text-sm text-muted-foreground">
+                        Data da Compra
+                      </td>
+                      <td className="px-4 py-3 font-semibold text-foreground">
+                        {formatDate(purchase.created_at)}
+                      </td>
+                    </tr>
+                    <tr>
+                      <td className="px-4 py-3 bg-muted/50 font-medium text-sm text-muted-foreground">
+                        ID da Transação
+                      </td>
+                      <td className="px-4 py-3 font-mono font-semibold text-primary">
+                        {purchase.id.slice(0, 8).toUpperCase()}
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
 
-            {/* Success Message */}
-            <div className="mt-6 text-center p-4 bg-accent/10 rounded-lg border border-accent/20">
-              <p className="text-lg font-bold text-accent">
-                Compra Com Sucesso!
-              </p>
-              <p className="text-sm text-muted-foreground mt-1">
-                Obrigado pela sua Compra
-              </p>
+              {/* Success Message */}
+              <div className="mt-6 text-center p-4 bg-accent/10 rounded-lg border border-accent/20">
+                <p className="text-lg font-bold text-accent">
+                  Compra Com Sucesso!
+                </p>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Obrigado pela sua Compra
+                </p>
+              </div>
             </div>
           </div>
-        </div>
 
-        {/* Rating Section - Only show if user is the buyer */}
-        {currentUserId && currentUserId === purchase.buyer_id && (
-          <CardContent className="p-6 pt-0">
-            <div className="p-4 bg-muted/30 rounded-lg border border-border">
-              <h3 className="font-semibold text-center mb-3">
-                {hasRated ? "A sua avaliação" : "Avalie este produto"}
-              </h3>
-              <div className="flex justify-center mb-3">
-                <StarRating
-                  rating={userRating}
-                  onRatingChange={setUserRating}
-                  readonly={hasRated}
-                  size="lg"
-                />
-              </div>
-              {hasRated ? (
-                <div className="flex items-center justify-center gap-2 text-accent">
-                  <CheckCircle2 className="w-4 h-4" />
-                  <span className="text-sm font-medium">Obrigado pela avaliação!</span>
+          {/* Rating Section - Only show if user is the buyer */}
+          {currentUserId && currentUserId === purchase.buyer_id && (
+            <div className="px-6 pt-6 pb-0">
+              <div className="p-4 bg-muted/30 rounded-lg border border-border">
+                <h3 className="font-semibold text-center mb-3">
+                  {hasRated ? "A sua avaliação" : "Avalie este produto"}
+                </h3>
+                <div className="flex justify-center mb-3">
+                  <StarRating
+                    rating={userRating}
+                    onRatingChange={setUserRating}
+                    readonly={hasRated}
+                    size="lg"
+                  />
                 </div>
-              ) : (
-                <Button
-                  variant="hero"
-                  size="sm"
-                  className="w-full"
-                  disabled={userRating === 0 || isSubmittingRating}
-                  onClick={handleSubmitRating}
-                >
-                  {isSubmittingRating ? (
-                    <>
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                      A submeter...
-                    </>
-                  ) : (
-                    "Submeter Avaliação"
-                  )}
-                </Button>
-              )}
+                {hasRated ? (
+                  <div className="flex items-center justify-center gap-2 text-accent">
+                    <CheckCircle2 className="w-4 h-4" />
+                    <span className="text-sm font-medium">Obrigado pela avaliação!</span>
+                  </div>
+                ) : (
+                  <Button
+                    variant="hero"
+                    size="sm"
+                    className="w-full"
+                    disabled={userRating === 0 || isSubmittingRating}
+                    onClick={handleSubmitRating}
+                  >
+                    {isSubmittingRating ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        A submeter...
+                      </>
+                    ) : (
+                      "Submeter Avaliação"
+                    )}
+                  </Button>
+                )}
+              </div>
             </div>
-          </CardContent>
-        )}
+          )}
 
-        {/* Action Buttons - Outside printable area */}
-        <CardContent className="p-6 pt-0 space-y-3">
-          <Button 
-            variant="outline-hero" 
-            className="w-full" 
-            onClick={handleGeneratePDF}
-            disabled={isGeneratingPDF}
-          >
-            {isGeneratingPDF ? (
-              <>
-                <Loader2 className="w-4 h-4 animate-spin" />
-                A gerar PDF...
-              </>
-            ) : (
-              <>
-                <Download className="w-4 h-4" />
-                Gerar PDF do Comprovativo
-              </>
-            )}
-          </Button>
-          <Button 
-            variant="secondary" 
-            className="w-full bg-[#25D366] hover:bg-[#20BD5A] text-white"
-            onClick={handleShareWhatsApp}
-          >
-            <MessageCircle className="w-4 h-4" />
-            Enviar via WhatsApp
-          </Button>
-          <Link to="/explorar" className="block">
-            <Button variant="hero" className="w-full">
-              Continuar a Comprar
+          {/* Action Buttons - Outside printable area */}
+          <CardContent className="p-6 space-y-3">
+            <Button 
+              variant="outline-hero" 
+              className="w-full" 
+              onClick={handleGeneratePDF}
+              disabled={isGeneratingPDF}
+            >
+              {isGeneratingPDF ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  A gerar PDF...
+                </>
+              ) : (
+                <>
+                  <Download className="w-4 h-4" />
+                  Gerar PDF do Comprovativo
+                </>
+              )}
             </Button>
-          </Link>
-        </CardContent>
-      </Card>
+            <Button 
+              variant="secondary" 
+              className="w-full bg-[#25D366] hover:bg-[#20BD5A] text-white"
+              onClick={handleShareWhatsApp}
+            >
+              <MessageCircle className="w-4 h-4" />
+              Enviar via WhatsApp
+            </Button>
+            <Link to="/explorar" className="block">
+              <Button variant="hero" className="w-full">
+                Continuar a Comprar
+              </Button>
+            </Link>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 };

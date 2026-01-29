@@ -2,10 +2,8 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { Bell, Menu, X, ShoppingBag } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { currentUser } from "@/data/mockData";
 import DashboardSidebar from "./DashboardSidebar";
 
 interface DashboardHeaderProps {
@@ -82,18 +80,6 @@ const DashboardHeader = ({ title }: DashboardHeaderProps) => {
             </span>
           )}
         </Button>
-
-        {/* User */}
-        <div className="flex items-center gap-3">
-          <div className="hidden sm:block text-right">
-            <p className="text-sm font-medium">{currentUser.name}</p>
-            <p className="text-xs text-muted-foreground">Vendedora</p>
-          </div>
-          <Avatar className="w-9 h-9">
-            <AvatarImage src={currentUser.avatar} alt={currentUser.name} />
-            <AvatarFallback>{currentUser.name.charAt(0)}</AvatarFallback>
-          </Avatar>
-        </div>
       </div>
     </header>
   );
