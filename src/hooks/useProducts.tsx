@@ -54,6 +54,32 @@ export const ProductsProvider = ({ children }: { children: ReactNode }) => {
   const [dynamicProducts, setDynamicProducts] = useState<DynamicProduct[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
+  // Chave para persistência no localStorage
+  const STORAGE_KEY = 'hoji_dynamic_products_v1';
+
+  // Carrega produtos persistidos do localStorage
+  const loadPersistedProducts = (): DynamicProduct[] => {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY) || '[]';
+      const parsed = JSON.parse(raw) as DynamicProduct[];
+      if (!Array.isArray(parsed)) return [];
+      // Garantir que todos os ids sejam strings e filtrar duplicados com mock
+      return parsed.map(p => ({ ...p, id: String(p.id) }));
+    } catch (e) {
+      console.error('Falha ao carregar produtos persistidos:', e);
+      return [];
+    }
+  };
+
+  // Salva todos os produtos dinâmicos no localStorage
+  const persistDynamicProducts = (productsToSave: DynamicProduct[]) => {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(productsToSave));
+    } catch (e) {
+      console.error('Falha ao persistir produtos:', e);
+    }
+  };
+
   // Inicializar mockados no contexto (sem duplicação)
   const mockProductsWithFlag = (mockProducts as any[]).map((p) => ({
     ...p,
@@ -80,7 +106,12 @@ export const ProductsProvider = ({ children }: { children: ReactNode }) => {
       return;
     }
 
-    setDynamicProducts((prev) => [...prev, product]);
+    setDynamicProducts((prev) => {
+      const next = [...prev, { ...product, id: String(product.id) }];
+      // Persistir
+      persistDynamicProducts(next);
+      return next;
+    });
     console.log(`✅ Produto adicionado: ${product.name} (${product.storeId})`);
   };
 
@@ -119,6 +150,12 @@ export const ProductsProvider = ({ children }: { children: ReactNode }) => {
   const clearDynamicProducts = () => {
     setDynamicProducts([]);
     console.log('🧹 Todos os produtos dinâmicos foram limpos');
+    // Limpar persistência
+    try {
+      localStorage.removeItem(STORAGE_KEY);
+    } catch (e) {
+      console.error('Falha ao limpar produtos persistidos:', e);
+    }
   };
 
   // ==========================================
@@ -129,6 +166,28 @@ export const ProductsProvider = ({ children }: { children: ReactNode }) => {
     ...mockProductsWithFlag,
     ...dynamicProducts,
   ];
+
+  // Ao montar, carregar produtos persistidos
+  useEffect(() => {
+    try {
+      const persisted = loadPersistedProducts();
+      // Filtrar produtos que colidem com mockados
+      const filtered = persisted.filter(p => !mockProductsWithFlag.some(m => m.id === p.id));
+      if (filtered.length > 0) {
+        setDynamicProducts(filtered.map(p => ({ ...p, id: String(p.id) })));
+        console.log(`🔁 Carregados ${filtered.length} produtos persistidos do armazenamento local`);
+      }
+    } catch (e) {
+      console.error('Erro ao inicializar produtos persistidos:', e);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Sempre que dynamicProducts mudar, persistir (redundante com persistDynamicProducts na adição,
+  // mas útil para atualizações/remoções realizadas por outras funções)
+  useEffect(() => {
+    persistDynamicProducts(dynamicProducts);
+  }, [dynamicProducts]);
 
   const value: ProductsContextType = {
     allProducts,

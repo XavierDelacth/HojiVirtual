@@ -10,7 +10,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import { products, stores, reviews, paymentMethods } from "@/data/mockData";
+import { stores, reviews, paymentMethods } from "@/data/mockData";
+import { useProducts } from "@/hooks/useProducts";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
@@ -23,7 +24,8 @@ const ProductDetails = () => {
   const [isCreatingPurchase, setIsCreatingPurchase] = useState(false);
   const [copiedIBAN, setCopiedIBAN] = useState(false);
 
-  const product = products.find(p => p.id === id);
+  const { allProducts } = useProducts();
+  const product = allProducts.find(p => String(p.id) === String(id));
   const store = stores.find(s => s.id === product?.storeId);
   const productReviews = reviews.filter(r => r.productId === id);
 
