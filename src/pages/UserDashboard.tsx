@@ -1,14 +1,15 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { Search, ShoppingBag, Heart, Clock, Star, ChevronRight } from "lucide-react";
+import { Search, ShoppingBag, Heart, Clock, Star, ChevronRight, LogOut } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import Navbar from "@/components/layout/Navbar";
+import UserSidebar from "@/components/dashboard/UserSidebar";
 import Footer from "@/components/layout/Footer";
 import { useAuth } from "@/hooks/useAuth";
-import { supabase } from "@/integrations/supabase/client";
+import { useNavigate } from "react-router-dom";
+import { products as mockProducts } from "@/data/mockData";
 
 interface Product {
   id: string;
@@ -22,7 +23,8 @@ interface Product {
 }
 
 const UserDashboard = () => {
-  const { user } = useAuth();
+  const { user, signOut } = useAuth();
+  const navigate = useNavigate();
   const [products, setProducts] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
@@ -32,24 +34,14 @@ const UserDashboard = () => {
   };
 
   useEffect(() => {
-    const fetchProducts = async () => {
-      setIsLoading(true);
-      const { data, error } = await supabase
-        .from('products')
-        .select('*')
-        .eq('is_active', true)
-        .order('created_at', { ascending: false })
-        .limit(12);
-
-      if (error) {
-        console.error('Error fetching products:', error);
-      } else {
-        setProducts(data || []);
-      }
+    // Use mock products for local development/demo
+    setIsLoading(true);
+    const t = setTimeout(() => {
+      setProducts(mockProducts.slice(0, 12) as Product[]);
       setIsLoading(false);
-    };
+    }, 300);
 
-    fetchProducts();
+    return () => clearTimeout(t);
   }, []);
 
   const filteredProducts = products.filter(product =>
@@ -61,17 +53,37 @@ const UserDashboard = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <Navbar />
-      
-      <main className="container mx-auto px-4 py-8">
+      <UserSidebar />
+      <div className="lg:ml-64">
+        <main className="p-4 lg:p-8 container mx-auto">
         {/* Welcome Section */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold mb-2">
-            Olá, {userName.split(' ')[0]}! 👋
-          </h1>
-          <p className="text-muted-foreground">
-            Explore os melhores produtos do mercado Hoji Ya Henda
-          </p>
+        <div className="mb-8 flex items-start justify-between">
+          <div>
+            <h1 className="text-3xl font-bold mb-2">
+              Olá, {userName.split(' ')[0]}! 👋
+            </h1>
+            <p className="text-muted-foreground">
+              Explore os melhores produtos do mercado Hoji Ya Henda
+            </p>
+          </div>
+          <div>
+            <Button
+              variant="secondary"
+              size="sm"
+              className="flex items-center"
+              onClick={async () => {
+                try {
+                  await signOut();
+                } catch (e) {
+                  console.error('Sign out error', e);
+                }
+                navigate('/');
+              }}
+            >
+              <LogOut className="w-4 h-4 mr-2" />
+              Sair
+            </Button>
+          </div>
         </div>
 
         {/* Quick Stats */}
@@ -218,7 +230,8 @@ const UserDashboard = () => {
             </Link>
           </CardContent>
         </Card>
-      </main>
+        </main>
+      </div>
 
       <Footer />
     </div>

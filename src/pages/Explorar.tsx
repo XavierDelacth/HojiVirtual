@@ -9,17 +9,21 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
-import { supabase } from "@/integrations/supabase/client";
+import { products as mockProducts } from "@/data/mockData";
 
 interface Product {
   id: string;
   name: string;
-  description: string | null;
+  description: string;
   price: number;
   category: string;
   images: string[];
   stock: number;
-  seller_id: string;
+  storeId: string;
+  storeName: string;
+  rating: number;
+  reviewCount: number;
+  featured: boolean;
 }
 
 const categories = [
@@ -30,6 +34,9 @@ const categories = [
   "Beleza",
   "Casa",
   "Alimentação",
+  "Artesanato",
+  "Livros",
+  "Desporto",
   "Outros"
 ];
 
@@ -45,23 +52,14 @@ const Explorar = () => {
   };
 
   useEffect(() => {
-    const fetchProducts = async () => {
-      setIsLoading(true);
-      const { data, error } = await supabase
-        .from('products')
-        .select('*')
-        .eq('is_active', true)
-        .order('created_at', { ascending: false });
-
-      if (error) {
-        console.error('Error fetching products:', error);
-      } else {
-        setProducts(data || []);
-      }
+    // Use mock products with simulated loading delay
+    setIsLoading(true);
+    const timer = setTimeout(() => {
+      setProducts(mockProducts as Product[]);
       setIsLoading(false);
-    };
+    }, 300);
 
-    fetchProducts();
+    return () => clearTimeout(timer);
   }, []);
 
   const filteredProducts = products.filter((product) => {

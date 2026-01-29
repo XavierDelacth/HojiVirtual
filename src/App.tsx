@@ -14,6 +14,8 @@ import Comprovativo from "./pages/Comprovativo";
 import Login from "./pages/Login";
 import Registo from "./pages/Registo";
 import UserDashboard from "./pages/UserDashboard";
+import DashboardCompras from "./pages/DashboardCompras";
+import DashboardComprovativos from "./pages/DashboardComprovativos";
 import SellerDashboard from "./pages/SellerDashboard";
 import Dashboard from "./pages/Dashboard";
 import DashboardProducts from "./pages/DashboardProducts";
@@ -47,6 +49,18 @@ const App = () => (
               <Route path="/dashboard/utilizador" element={
                 <RoleBasedRoute allowedRoles={['user']}>
                   <UserDashboard />
+                </RoleBasedRoute>
+              } />
+
+              <Route path="/dashboard/compras" element={
+                <RoleBasedRoute allowedRoles={['user']}>
+                  <DashboardCompras />
+                </RoleBasedRoute>
+              } />
+
+              <Route path="/dashboard/comprovativos" element={
+                <RoleBasedRoute allowedRoles={['user']}>
+                  <DashboardComprovativos />
                 </RoleBasedRoute>
               } />
               
