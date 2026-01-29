@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { HelmetProvider } from "react-helmet-async";
 import { AuthProvider } from "@/hooks/useAuth";
+import { ProductsProvider } from "@/hooks/useProducts";
 import ProtectedRoute from "@/components/auth/ProtectedRoute";
 import RoleBasedRoute from "@/components/auth/RoleBasedRoute";
 import Index from "./pages/Index";
@@ -33,6 +34,7 @@ const App = () => (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
         <AuthProvider>
+                   <ProductsProvider>
           <Toaster />
           <Sonner />
           <BrowserRouter>
@@ -110,6 +112,7 @@ const App = () => (
               <Route path="*" element={<NotFound />} />
             </Routes>
           </BrowserRouter>
+                 </ProductsProvider>
         </AuthProvider>
       </TooltipProvider>
     </QueryClientProvider>

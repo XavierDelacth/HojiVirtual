@@ -9,6 +9,8 @@ import EditProfileModal from "@/components/dashboard/EditProfileModal";
 import AddProductModal from "@/components/dashboard/AddProductModal";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { useProducts } from "@/hooks/useProducts";
+import { useAuth } from "@/hooks/useAuth";
 import { 
   Store, 
   MapPin, 
@@ -39,11 +41,32 @@ interface ProfileData {
   avatar_url: string | null;
 }
 
+interface ProductStoreData {
+  id: string;
+  name: string;
+  description: string;
+  price: number;
+  stock: number;
+  category: string;
+  images: string[];
+  storeId: string;
+  storeName: string;
+  rating: number;
+  reviewCount: number;
+  featured: boolean;
+  isDynamic: true;
+}
+
 const MinhaLinha = () => {
   const [editProfileOpen, setEditProfileOpen] = useState(false);
   const [addProductOpen, setAddProductOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [profile, setProfile] = useState<ProfileData | null>(null);
+  const [storeProducts, setStoreProducts] = useState<ProductStoreData[]>([]);
+
+  // 🎯 Usar hooks para autenticação e produtos globais
+  const { user } = useAuth();
+  const { getStoreProducts, addProduct, removeProduct } = useProducts();
 
   const fetchProfile = async () => {
     setIsLoading(true);
@@ -78,6 +101,67 @@ const MinhaLinha = () => {
     fetchProfile();
   }, []);
 
+  // 🎯 Carregar produtos da loja quando profile mudar
+  useEffect(() => {
+    if (user && profile) {
+      // Gerar storeId baseado no user ID (consistente)
+      const storeId = `store_${user.id.slice(0, 8)}`;
+      
+      // Obter produtos da loja do contexto global
+      const storeProds = getStoreProducts(storeId) as ProductStoreData[];
+      setStoreProducts(storeProds);
+      
+      console.log(`📦 Carregados ${storeProds.length} produtos da loja ${storeId}`);
+    }
+  }, [user, profile, getStoreProducts]);
+
+  // 🛍️ Handler para adicionar novo produto
+  const handleAddProduct = (formData: {
+    name: string;
+    description: string;
+    price: number;
+    category: string;
+    stock: number;
+  }) => {
+    if (!user || !profile) {
+      toast.error('Erro: Não foi possível identificar o utilizador');
+      return;
+    }
+
+    const storeId = `store_${user.id.slice(0, 8)}`;
+    const storeName = profile.store_name || "Minha Loja";
+
+    // Criar novo produto com ID único
+    const newProduct: ProductStoreData = {
+      id: `product_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      name: formData.name,
+      description: formData.description,
+      price: formData.price,
+      stock: formData.stock,
+      category: formData.category,
+      // Imagens placeholder - pode ser melhorado depois
+      images: [
+        'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=500&h=500&fit=crop',
+        'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=500&h=500&fit=crop'
+      ],
+      storeId: storeId,
+      storeName: storeName,
+      rating: 5,
+      reviewCount: 0,
+      featured: false,
+      isDynamic: true
+    };
+
+    // Adicionar ao contexto global
+    addProduct(newProduct);
+
+    // Atualizar lista local
+    setStoreProducts([...storeProducts, newProduct]);
+
+    toast.success(`✅ Produto "${formData.name}" criado com sucesso!`);
+    console.log(`✅ Novo produto adicionado: ${newProduct.id}`);
+  };
+
   // Use profile data or fallback to defaults
   const storeData = {
     name: profile?.store_name || "Minha Loja",
@@ -95,7 +179,7 @@ const MinhaLinha = () => {
 
   // Mock statistics (can be replaced with real data later)
   const stats = {
-    totalProducts: products.length,
+    totalProducts: storeProducts.length,
     activeSales: 0,
     monthlyRevenue: 0,
     monthlyOrders: 0,
@@ -242,7 +326,7 @@ const MinhaLinha = () => {
             {/* Linha de Produtos */}
             <TabsContent value="produtos" className="space-y-6 animate-fade-in">
               <div className="flex items-center justify-between">
-                <h2 className="text-lg font-semibold">Meus Produtos ({products.length})</h2>
+                <h2 className="text-lg font-semibold">Meus Produtos ({storeProducts.length})</h2>
                 <Button variant="outline" onClick={() => setAddProductOpen(true)}>
                   <Plus className="w-4 h-4 mr-2" />
                   Adicionar Produto
@@ -250,7 +334,8 @@ const MinhaLinha = () => {
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                {products.map((product) => (
+                {storeProducts.length > 0 ? (
+                  storeProducts.map((product) => (
                   <Card key={product.id} className="overflow-hidden hover:shadow-lg transition-shadow">
                     <div className="aspect-square bg-muted relative">
                       <img 
@@ -274,7 +359,19 @@ const MinhaLinha = () => {
                       </div>
                     </CardContent>
                   </Card>
-                ))}
+                  ))
+                ) : (
+                  <Card className="col-span-full flex items-center justify-center py-12">
+                    <div className="text-center">
+                      <Package className="w-12 h-12 text-muted-foreground mx-auto mb-3" />
+                      <p className="text-muted-foreground mb-4">Ainda não tem produtos. Adicione o primeiro!</p>
+                      <Button onClick={() => setAddProductOpen(true)}>
+                        <Plus className="w-4 h-4 mr-2" />
+                        Adicionar Produto
+                      </Button>
+                    </div>
+                  </Card>
+                )}
               </div>
             </TabsContent>
 
@@ -376,7 +473,7 @@ const MinhaLinha = () => {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
-                    {products.slice(0, 5).map((product, index) => (
+                    {storeProducts.slice(0, 5).map((product, index) => (
                       <div key={product.id} className="flex items-center gap-4 p-3 bg-muted/50 rounded-lg">
                         <span className="text-lg font-bold text-muted-foreground w-6">#{index + 1}</span>
                         <img 
@@ -415,9 +512,7 @@ const MinhaLinha = () => {
       <AddProductModal
         open={addProductOpen}
         onOpenChange={setAddProductOpen}
-        onAdd={(product) => {
-          toast.success(`Produto "${product.name}" adicionado com sucesso!`);
-        }}
+        onAdd={handleAddProduct}
       />
     </div>
   );

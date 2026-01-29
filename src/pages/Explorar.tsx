@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { products as mockProducts } from "@/data/mockData";
+import { useProducts } from "@/hooks/useProducts";
 
 interface Product {
   id: string;
@@ -47,20 +48,23 @@ const Explorar = () => {
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [showFilters, setShowFilters] = useState(false);
 
+  // 🎯 Usar hook de produtos para combinar mockados + dinâmicos
+  const { allProducts } = useProducts();
+
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat('pt-AO').format(price);
   };
 
   useEffect(() => {
-    // Use mock products with simulated loading delay
+    // 🔄 Atualizar produtos sempre que allProducts mudar
     setIsLoading(true);
     const timer = setTimeout(() => {
-      setProducts(mockProducts as Product[]);
+      setProducts(allProducts);
       setIsLoading(false);
     }, 300);
 
     return () => clearTimeout(timer);
-  }, []);
+  }, [allProducts]);
 
   const filteredProducts = products.filter((product) => {
     const matchesSearch = product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||

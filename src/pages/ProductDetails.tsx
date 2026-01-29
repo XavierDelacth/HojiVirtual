@@ -1,3 +1,6 @@
+
+
+
 import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Star, MapPin, BadgeCheck, ArrowLeft, MessageCircle, ShoppingBag, Copy, CheckCircle2 } from "lucide-react";
