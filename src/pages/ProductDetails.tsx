@@ -1,7 +1,6 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { Star, MapPin, BadgeCheck, ArrowLeft, MessageCircle, ShoppingBag, Loader2 } from "lucide-react";
-import { QRCodeSVG } from "qrcode.react";
+import { Star, MapPin, BadgeCheck, ArrowLeft, MessageCircle, ShoppingBag, Copy, CheckCircle2 } from "lucide-react";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 import { Button } from "@/components/ui/button";
@@ -17,11 +16,9 @@ const ProductDetails = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [showPurchaseModal, setShowPurchaseModal] = useState(false);
-  const [purchaseId, setPurchaseId] = useState<string | null>(null);
-  const [purchaseToken, setPurchaseToken] = useState<string | null>(null);
+  const [purchaseData, setPurchaseData] = useState<any | null>(null);
   const [isCreatingPurchase, setIsCreatingPurchase] = useState(false);
-  const [timeRemaining, setTimeRemaining] = useState("3h 00min");
-  const [expiresAt, setExpiresAt] = useState<Date | null>(null);
+  const [copiedIBAN, setCopiedIBAN] = useState(false);
 
   const product = products.find(p => p.id === id);
   const store = stores.find(s => s.id === product?.storeId);
@@ -31,27 +28,19 @@ const ProductDetails = () => {
     return new Intl.NumberFormat('pt-AO').format(price);
   };
 
-  // Timer countdown
-  useEffect(() => {
-    if (!expiresAt) return;
+  const generateNumericReference = (): string => {
+    return Math.floor(Math.random() * 1000000000000000).toString().padStart(15, '0');
+  };
 
-    const interval = setInterval(() => {
-      const now = new Date();
-      const diff = expiresAt.getTime() - now.getTime();
-
-      if (diff <= 0) {
-        setTimeRemaining("Expirado");
-        clearInterval(interval);
-        return;
-      }
-
-      const hours = Math.floor(diff / (1000 * 60 * 60));
-      const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-      setTimeRemaining(`${hours}h ${minutes.toString().padStart(2, '0')}min`);
-    }, 1000);
-
-    return () => clearInterval(interval);
-  }, [expiresAt]);
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text);
+    setCopiedIBAN(true);
+    setTimeout(() => setCopiedIBAN(false), 2000);
+    toast({
+      title: "IBAN copiado!",
+      description: "Pode agora efetuar a transferência bancária.",
+    });
+  };
 
   const handlePurchase = async () => {
     if (!product || !store) return;
@@ -59,8 +48,18 @@ const ProductDetails = () => {
     setIsCreatingPurchase(true);
 
     try {
-      // Check if user is authenticated
-      const { data: { user } } = await supabase.auth.getUser();
+      let user: any = null;
+      const { data: { user: supabaseUser } } = await supabase.auth.getUser();
+      
+      if (supabaseUser) {
+        user = supabaseUser;
+      } else {
+        const userEmail = localStorage.getItem("userEmail");
+        const userName = localStorage.getItem("userName");
+        if (userEmail && userName) {
+          user = { id: userEmail, email: userEmail, name: userName };
+        }
+      }
       
       if (!user) {
         toast({
@@ -72,56 +71,63 @@ const ProductDetails = () => {
         return;
       }
 
-      // Get user profile for buyer name
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("name")
-        .eq("user_id", user.id)
-        .maybeSingle();
+      const numericRef = generateNumericReference();
+      const buyerName = (user as any).name || user.email?.split('@')[0] || "Comprador";
 
-      const buyerName = profile?.name || user.email?.split('@')[0] || "Comprador";
+      const purchase = {
+        id: numericRef,
+        product_id: product.id,
+        product_name: product.name,
+        product_price: product.price,
+        store_name: store.name,
+        store_id: store.id,
+        buyer_id: user.id,
+        buyer_name: buyerName,
+        product_image: product.images[0],
+        status: "pending",
+        iban: (store as any).iban,
+        bank: (store as any).bank,
+        seller_name: store.owner,
+        created_at: new Date().toISOString(),
+      };
 
-      // Create purchase record with secure token
-      const { data: purchase, error } = await supabase
-        .from("purchases")
-        .insert({
-          buyer_id: user.id,
-          buyer_name: buyerName,
-          product_name: product.name,
-          product_price: product.price,
-          store_name: store.name,
-          store_id: store.id,
-          product_id: product.id,
-          product_image: product.images[0],
-          status: "pending",
-        })
-        .select('id, expires_at, secure_token')
-        .single();
-
-      if (error) {
-        console.error("Error creating purchase:", error);
-        toast({
-          title: "Erro",
-          description: "Não foi possível processar a compra. Tente novamente.",
-          variant: "destructive",
-        });
-        return;
+      try {
+        await supabase
+          .from("purchases")
+          .insert({
+            buyer_id: user.id,
+            buyer_name: buyerName,
+            product_name: product.name,
+            product_price: product.price,
+            store_name: store.name,
+            store_id: store.id,
+            product_id: product.id,
+            product_image: product.images[0],
+            status: "pending",
+          });
+      } catch (e) {
+        console.log('Backend indisponível, guardando localmente');
       }
 
-      setPurchaseId(purchase.id);
-      setPurchaseToken(purchase.secure_token);
-      setExpiresAt(new Date(purchase.expires_at));
-      setShowPurchaseModal(true);
+      try {
+        const purchases = JSON.parse(localStorage.getItem('hoji_purchases') || '[]');
+        purchases.push(purchase);
+        localStorage.setItem('hoji_purchases', JSON.stringify(purchases));
+      } catch (e) {
+        console.error('Erro ao guardar compra em localStorage:', e);
+      }
+
+      setPurchaseData(purchase);
 
       toast({
-        title: "Compra iniciada!",
-        description: "Apresente o QR Code ao vendedor para validar.",
+        title: "Compra registada!",
+        description: `Referência: ${numericRef}. Clique em 'Gerar Comprovativo' para detalhes.`,
       });
-    } catch (err) {
-      console.error("Purchase error:", err);
+    } catch (error) {
+      console.error('Erro ao registar compra:', error);
       toast({
         title: "Erro",
-        description: "Ocorreu um erro inesperado. Tente novamente.",
+        description: "Não foi possível registar a compra. Tente novamente.",
         variant: "destructive",
       });
     } finally {
@@ -129,10 +135,134 @@ const ProductDetails = () => {
     }
   };
 
-  const getQRCodeUrl = () => {
-    if (!purchaseId || !purchaseToken) return "";
-    const baseUrl = window.location.origin;
-    return `${baseUrl}/comprovativo/${purchaseId}?token=${encodeURIComponent(purchaseToken)}`;
+  const handleGenerateReceipt = async () => {
+    if (!purchaseData) return;
+
+    try {
+      const html2canvas = (await import('html2canvas')).default;
+      const jsPDF = (await import('jspdf')).jsPDF;
+
+      const element = document.createElement('div');
+      element.style.position = 'absolute';
+      element.style.left = '-9999px';
+      element.style.top = '-9999px';
+      element.style.width = '800px';
+      element.style.background = 'white';
+      element.style.padding = '40px';
+      element.style.fontFamily = 'Arial, sans-serif';
+      element.style.color = '#333';
+
+      element.innerHTML = `
+        <div style="text-align: center; margin-bottom: 40px;">
+          <h1 style="color: #E67E22; margin: 0; font-size: 28px; font-weight: bold;">COMPROVATIVO DE COMPRA</h1>
+        </div>
+        
+        <div style="background: #f9f9f9; padding: 20px; margin-bottom: 30px; border-left: 5px solid #E67E22; border-radius: 4px;">
+          <div style="font-size: 12px; color: #666; margin-bottom: 8px;">Número de Referência</div>
+          <div style="font-size: 24px; color: #E67E22; font-weight: bold; letter-spacing: 2px; font-family: 'Courier New', monospace;">
+            ${purchaseData.id}
+          </div>
+        </div>
+
+        <div style="margin-bottom: 30px;">
+          <h2 style="color: #E67E22; font-size: 14px; font-weight: bold; margin: 0 0 15px 0; text-transform: uppercase;">PRODUTO</h2>
+          <table style="width: 100%; border-collapse: collapse;">
+            <tr>
+              <td style="padding: 8px 0; border-bottom: 1px solid #eee; color: #666;">Nome:</td>
+              <td style="padding: 8px 0; border-bottom: 1px solid #eee; font-weight: bold;">${purchaseData.product_name}</td>
+            </tr>
+            <tr>
+              <td style="padding: 8px 0; border-bottom: 1px solid #eee; color: #666;">Valor:</td>
+              <td style="padding: 8px 0; border-bottom: 1px solid #eee; font-weight: bold;">${purchaseData.product_price.toLocaleString('pt-AO')} Kz</td>
+            </tr>
+          </table>
+        </div>
+
+        <div style="margin-bottom: 30px;">
+          <h2 style="color: #E67E22; font-size: 14px; font-weight: bold; margin: 0 0 15px 0; text-transform: uppercase;">VENDEDOR</h2>
+          <table style="width: 100%; border-collapse: collapse;">
+            <tr>
+              <td style="padding: 8px 0; border-bottom: 1px solid #eee; color: #666;">Loja:</td>
+              <td style="padding: 8px 0; border-bottom: 1px solid #eee; font-weight: bold;">${purchaseData.store_name}</td>
+            </tr>
+            <tr>
+              <td style="padding: 8px 0; border-bottom: 1px solid #eee; color: #666;">Vendedor:</td>
+              <td style="padding: 8px 0; border-bottom: 1px solid #eee; font-weight: bold;">${purchaseData.seller_name}</td>
+            </tr>
+            <tr>
+              <td style="padding: 8px 0; border-bottom: 1px solid #eee; color: #666;">IBAN:</td>
+              <td style="padding: 8px 0; border-bottom: 1px solid #eee; font-family: 'Courier New', monospace; font-weight: bold;">${purchaseData.iban || 'N/A'}</td>
+            </tr>
+          </table>
+        </div>
+
+        <div style="margin-bottom: 30px;">
+          <h2 style="color: #E67E22; font-size: 14px; font-weight: bold; margin: 0 0 15px 0; text-transform: uppercase;">COMPRADOR</h2>
+          <table style="width: 100%; border-collapse: collapse;">
+            <tr>
+              <td style="padding: 8px 0; border-bottom: 1px solid #eee; color: #666;">Nome:</td>
+              <td style="padding: 8px 0; border-bottom: 1px solid #eee; font-weight: bold;">${purchaseData.buyer_name}</td>
+            </tr>
+          </table>
+        </div>
+
+        <div style="margin-bottom: 30px;">
+          <h2 style="color: #E67E22; font-size: 14px; font-weight: bold; margin: 0 0 15px 0; text-transform: uppercase;">DATA E HORA</h2>
+          <table style="width: 100%; border-collapse: collapse;">
+            <tr>
+              <td style="padding: 8px 0; border-bottom: 1px solid #eee; color: #666;">Data:</td>
+              <td style="padding: 8px 0; border-bottom: 1px solid #eee; font-weight: bold;">${new Date(purchaseData.created_at).toLocaleDateString('pt-AO')}</td>
+            </tr>
+            <tr>
+              <td style="padding: 8px 0; border-bottom: 1px solid #eee; color: #666;">Hora:</td>
+              <td style="padding: 8px 0; border-bottom: 1px solid #eee; font-weight: bold;">${new Date(purchaseData.created_at).toLocaleTimeString('pt-AO')}</td>
+            </tr>
+          </table>
+        </div>
+
+        <div style="background: linear-gradient(135deg, #2ED573 0%, #27AE60 100%); color: white; padding: 25px; text-align: center; border-radius: 4px; margin-bottom: 30px;">
+          <div style="font-size: 20px; font-weight: bold; margin-bottom: 8px;">✅ COMPRA REALIZADA COM SUCESSO</div>
+          <div style="font-size: 14px;">Obrigado por comprar na Hoji Virtual Hub</div>
+        </div>
+
+        <div style="text-align: center; color: #999; font-size: 11px; border-top: 1px solid #eee; padding-top: 20px;">
+          <p style="margin: 0;">Gerado em: ${new Date().toLocaleString('pt-AO')}</p>
+          <p style="margin: 5px 0 0 0;">Este é um comprovativo automático. Guarde-o para seus registos.</p>
+        </div>
+      `;
+
+      document.body.appendChild(element);
+
+      const canvas = await html2canvas(element, {
+        scale: 2,
+        backgroundColor: '#ffffff',
+        useCORS: true,
+        logging: false,
+        windowWidth: 800,
+      });
+
+      document.body.removeChild(element);
+
+      const imgWidth = 200;
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      
+      const imgData = canvas.toDataURL('image/png');
+      pdf.addImage(imgData, 'PNG', 5, 5, imgWidth, imgHeight);
+      pdf.save(`comprovativo_${purchaseData.id}.pdf`);
+
+      toast({
+        title: "PDF descarregado com sucesso!",
+        description: `Ficheiro: comprovativo_${purchaseData.id}.pdf`,
+      });
+    } catch (error) {
+      console.error('Erro ao gerar PDF:', error);
+      toast({
+        title: "Erro ao descarregar",
+        description: "Não foi possível gerar o PDF. Tente novamente.",
+        variant: "destructive",
+      });
+    }
   };
 
   if (!product) {
@@ -140,6 +270,7 @@ const ProductDetails = () => {
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
           <h1 className="text-2xl font-bold mb-4">Produto não encontrado</h1>
+          <p className="text-muted-foreground mb-6">Desculpe, este produto não existe ou foi removido.</p>
           <Button onClick={() => navigate("/explorar")}>Voltar aos Produtos</Button>
         </div>
       </div>
@@ -152,7 +283,6 @@ const ProductDetails = () => {
       
       <main className="pt-20 pb-12">
         <div className="container mx-auto px-4">
-          {/* Back Button */}
           <Button 
             variant="ghost" 
             className="mb-6 -ml-2"
@@ -163,7 +293,6 @@ const ProductDetails = () => {
           </Button>
 
           <div className="grid lg:grid-cols-2 gap-8 lg:gap-12">
-            {/* Product Image */}
             <div className="space-y-4">
               <div className="aspect-square rounded-2xl overflow-hidden bg-muted">
                 <img
@@ -174,9 +303,7 @@ const ProductDetails = () => {
               </div>
             </div>
 
-            {/* Product Info */}
             <div className="space-y-6">
-              {/* Title & Rating */}
               <div>
                 <h1 className="text-2xl md:text-3xl font-bold mb-3">{product.name}</h1>
                 <div className="flex items-center gap-4">
@@ -198,7 +325,6 @@ const ProductDetails = () => {
                 </div>
               </div>
 
-              {/* Price */}
               <div className="bg-muted/50 rounded-xl p-6">
                 <span className="text-3xl md:text-4xl font-bold text-primary">
                   {formatPrice(product.price)}
@@ -206,7 +332,6 @@ const ProductDetails = () => {
                 <span className="text-xl text-muted-foreground ml-2">Kz</span>
               </div>
 
-              {/* Store Card */}
               {store && (
                 <Card>
                   <CardContent className="p-4">
@@ -236,7 +361,6 @@ const ProductDetails = () => {
                 </Card>
               )}
 
-              {/* Location */}
               <div className="flex items-start gap-3 p-4 bg-muted/50 rounded-xl">
                 <MapPin className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
                 <div>
@@ -245,7 +369,6 @@ const ProductDetails = () => {
                 </div>
               </div>
 
-              {/* Payment Methods */}
               <div>
                 <h3 className="font-medium mb-3">Métodos de Pagamento</h3>
                 <div className="flex flex-wrap gap-2">
@@ -258,21 +381,10 @@ const ProductDetails = () => {
                 </div>
               </div>
 
-              {/* Action Buttons */}
               <div className="flex flex-col sm:flex-row gap-3 pt-4">
-                <Button 
-                  variant="hero" 
-                  size="lg" 
-                  className="flex-1" 
-                  onClick={handlePurchase}
-                  disabled={isCreatingPurchase}
-                >
-                  {isCreatingPurchase ? (
-                    <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-                  ) : (
-                    <ShoppingBag className="w-5 h-5 mr-2" />
-                  )}
-                  {isCreatingPurchase ? "A processar..." : "Comprar Agora"}
+                <Button variant="hero" size="lg" className="flex-1" onClick={() => setShowPurchaseModal(true)}>
+                  <ShoppingBag className="w-5 h-5 mr-2" />
+                  Comprar Agora
                 </Button>
                 <Button variant="outline" size="lg" className="flex-1">
                   <MessageCircle className="w-5 h-5 mr-2" />
@@ -282,7 +394,6 @@ const ProductDetails = () => {
             </div>
           </div>
 
-          {/* Description */}
           <div className="mt-12 grid md:grid-cols-3 gap-8">
             <div className="md:col-span-2">
               <h2 className="text-xl font-bold mb-4">Descrição</h2>
@@ -290,7 +401,6 @@ const ProductDetails = () => {
                 {product.description}
               </p>
 
-              {/* Reviews */}
               <div className="mt-10">
                 <h2 className="text-xl font-bold mb-6">
                   Avaliações ({product.reviewCount})
@@ -351,73 +461,132 @@ const ProductDetails = () => {
         </div>
       </main>
 
-      {/* Purchase Modal with Real QR Code */}
       <Dialog open={showPurchaseModal} onOpenChange={setShowPurchaseModal}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle className="text-center">Complete a Sua Compra</DialogTitle>
+            <DialogTitle className="text-center">Confirmar Compra</DialogTitle>
             <DialogDescription className="text-center">
-              Apresente este QR Code ao vendedor
+              Efetue a transferência para a conta abaixo
             </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-6 py-4">
-            {/* Product Summary */}
             <div className="flex items-center gap-4 p-4 bg-muted/50 rounded-xl">
               <img
-                src={product.images[0]}
-                alt={product.name}
+                src={product?.images[0]}
+                alt={product?.name}
                 className="w-16 h-16 rounded-lg object-cover"
               />
               <div className="flex-1">
-                <h4 className="font-medium text-sm">{product.name}</h4>
-                <p className="text-xs text-muted-foreground">{product.storeName}</p>
+                <h4 className="font-medium text-sm">{product?.name}</h4>
+                <p className="text-xs text-muted-foreground">{product?.storeName}</p>
                 <p className="text-primary font-bold mt-1">
-                  {formatPrice(product.price)} Kz
+                  {product && formatPrice(product.price)} Kz
                 </p>
               </div>
             </div>
 
-            {/* Real QR Code */}
-            <div className="text-center">
-              <div className="w-52 h-52 mx-auto bg-white rounded-2xl flex items-center justify-center p-3 shadow-lg">
-                {purchaseId && (
-                  <QRCodeSVG
-                    value={getQRCodeUrl()}
-                    size={180}
-                    level="H"
-                    includeMargin={false}
-                  />
+            {store && (
+              <div className="space-y-4 bg-primary/5 p-4 rounded-xl border border-primary/20">
+                <h3 className="font-semibold text-base">Dados Bancários do Vendedor</h3>
+                
+                <div>
+                  <p className="text-xs text-muted-foreground mb-1">Titular da Conta</p>
+                  <p className="font-medium">{store.owner}</p>
+                </div>
+
+                {(store as any).bank && (
+                  <div>
+                    <p className="text-xs text-muted-foreground mb-1">Banco</p>
+                    <p className="font-medium">{(store as any).bank}</p>
+                  </div>
                 )}
-              </div>
-              <p className="text-sm text-muted-foreground mt-4 mb-2">
-                Escaneie o QR Code para ver o comprovativo
-              </p>
-              <div className="flex items-center justify-center gap-2 text-secondary">
-                <span className="text-lg">⏰</span>
-                <span className="text-sm font-medium">Válido por: {timeRemaining}</span>
-              </div>
-            </div>
 
-            {/* Instructions */}
+                {(store as any).iban && (
+                  <div>
+                    <p className="text-xs text-muted-foreground mb-2">IBAN</p>
+                    <div className="flex items-center gap-2 bg-background p-3 rounded-lg border border-border">
+                      <code className="font-mono text-sm font-bold flex-1 break-all">
+                        {(store as any).iban}
+                      </code>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => copyToClipboard((store as any).iban!)}
+                        className="flex-shrink-0"
+                      >
+                        {copiedIBAN ? (
+                          <CheckCircle2 className="w-4 h-4 text-green-500" />
+                        ) : (
+                          <Copy className="w-4 h-4" />
+                        )}
+                      </Button>
+                    </div>
+                  </div>
+                )}
+
+                <div className="bg-background p-3 rounded-lg border border-primary/30">
+                  <p className="text-xs text-muted-foreground mb-1">Valor a Transferir</p>
+                  <p className="text-lg font-bold text-primary">
+                    {product && formatPrice(product.price)} Kz
+                  </p>
+                </div>
+              </div>
+            )}
+
             <div className="space-y-2 text-sm">
-              <div className="flex items-center gap-3">
-                <span className="w-6 h-6 rounded-full bg-primary/10 text-primary flex items-center justify-center text-xs font-bold">1</span>
-                <span>Mostre este QR Code ao vendedor</span>
-              </div>
-              <div className="flex items-center gap-3">
-                <span className="w-6 h-6 rounded-full bg-primary/10 text-primary flex items-center justify-center text-xs font-bold">2</span>
-                <span>O vendedor irá validar a compra</span>
-              </div>
-              <div className="flex items-center gap-3">
-                <span className="w-6 h-6 rounded-full bg-primary/10 text-primary flex items-center justify-center text-xs font-bold">3</span>
-                <span>Após validação, avalie a sua experiência</span>
+              <p className="font-medium">Como proceder:</p>
+              <div className="space-y-2">
+                <div className="flex items-start gap-3">
+                  <span className="w-6 h-6 rounded-full bg-primary/10 text-primary flex items-center justify-center text-xs font-bold flex-shrink-0">1</span>
+                  <span>Copie o IBAN do vendedor</span>
+                </div>
+                <div className="flex items-start gap-3">
+                  <span className="w-6 h-6 rounded-full bg-primary/10 text-primary flex items-center justify-center text-xs font-bold flex-shrink-0">2</span>
+                  <span>Aceda à sua aplicação de banco</span>
+                </div>
+                <div className="flex items-start gap-3">
+                  <span className="w-6 h-6 rounded-full bg-primary/10 text-primary flex items-center justify-center text-xs font-bold flex-shrink-0">3</span>
+                  <span>Efetue a transferência do valor indicado</span>
+                </div>
+                <div className="flex items-start gap-3">
+                  <span className="w-6 h-6 rounded-full bg-primary/10 text-primary flex items-center justify-center text-xs font-bold flex-shrink-0">4</span>
+                  <span>Clique em "Comprar" para confirmar</span>
+                </div>
               </div>
             </div>
 
-            <Button variant="hero" className="w-full" onClick={() => setShowPurchaseModal(false)}>
-              Concluir
+            <Button 
+              variant="hero" 
+              className="w-full" 
+              onClick={handlePurchase}
+              disabled={isCreatingPurchase}
+            >
+              {isCreatingPurchase ? "Processando..." : "Comprar"}
             </Button>
+
+            {purchaseData && (
+              <div className="pt-2 border-t space-y-2">
+                <p className="text-sm text-green-600 font-medium text-center">
+                  ✓ Compra registada! Referência: {purchaseData.id}
+                </p>
+                <Button 
+                  variant="hero" 
+                  className="w-full bg-green-600 hover:bg-green-700"
+                  onClick={handleGenerateReceipt}
+                >
+                  📄 Gerar PDF
+                </Button>
+                <Button 
+                  variant="outline" 
+                  className="w-full"
+                  onClick={() => setShowPurchaseModal(false)}
+                >
+                  Fechar
+                </Button>
+              </div>
+            )}
           </div>
         </DialogContent>
       </Dialog>

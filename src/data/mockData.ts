@@ -11,6 +11,8 @@ export interface Store {
   location: string;
   image: string;
   description: string;
+  iban?: string;
+  bank?: string;
 }
 
 export interface Product {
@@ -61,7 +63,9 @@ export const stores: Store[] = [
     verified: true,
     location: "Mercado Hoji Ya Henda, Box 12",
     image: "https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=400",
-    description: "Moda feminina de qualidade com preços acessíveis"
+    description: "Moda feminina de qualidade com preços acessíveis",
+    iban: "AO06000400000009000157512",
+    bank: "BFA - Banco de Fomento Angola"
   },
   {
     id: "2",
@@ -73,7 +77,9 @@ export const stores: Store[] = [
     verified: true,
     location: "Mercado Hoji Ya Henda, Box 45",
     image: "https://images.unsplash.com/photo-1531297484001-80022131f5a1?w=400",
-    description: "Os melhores gadgets e eletrónicos de Luanda"
+    description: "Os melhores gadgets e eletrónicos de Luanda",
+    iban: "AO06000600000012000157512",
+    bank: "BAI - Banco Angolano de Investimentos"
   },
   {
     id: "3",
@@ -85,7 +91,9 @@ export const stores: Store[] = [
     verified: true,
     location: "Mercado Hoji Ya Henda, Box 78",
     image: "https://images.unsplash.com/photo-1542838132-92c53300491e?w=400",
-    description: "Produtos alimentares frescos e de qualidade"
+    description: "Produtos alimentares frescos e de qualidade",
+    iban: "AO06000300000015000157512",
+    bank: "BPC - Banco Privado Comercial"
   },
   {
     id: "4",
@@ -97,7 +105,9 @@ export const stores: Store[] = [
     verified: true,
     location: "Mercado Hoji Ya Henda, Box 23",
     image: "https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?w=400",
-    description: "Cosméticos e produtos de beleza naturais"
+    description: "Cosméticos e produtos de beleza naturais",
+    iban: "AO06000700000018000157512",
+    bank: "BCA - Banco de Crédito do Sul"
   },
   {
     id: "5",
@@ -109,7 +119,9 @@ export const stores: Store[] = [
     verified: true,
     location: "Mercado Hoji Ya Henda, Box 56",
     image: "https://images.unsplash.com/photo-1528396518501-b53b655eb9b3?w=400",
-    description: "Arte tradicional angolana feita à mão"
+    description: "Arte tradicional angolana feita à mão",
+    iban: "AO06000500000020000157512",
+    bank: "Banco de Desenvolvimento de Angola"
   },
   {
     id: "6",
@@ -121,7 +133,9 @@ export const stores: Store[] = [
     verified: true,
     location: "Mercado Hoji Ya Henda, Box 89",
     image: "https://images.unsplash.com/photo-1556906781-9a412961c28c?w=400",
-    description: "Equipamentos desportivos e merchandising de clubes"
+    description: "Equipamentos desportivos e merchandising de clubes",
+    iban: "AO06000800000022000157512",
+    bank: "BPI - Banco Português de Investimento"
   },
   {
     id: "7",
@@ -133,7 +147,9 @@ export const stores: Store[] = [
     verified: true,
     location: "Mercado Hoji Ya Henda, Box 34",
     image: "https://images.unsplash.com/photo-1490114538077-0a7f8cb49891?w=400",
-    description: "Fatos e roupas sociais para profissionais"
+    description: "Fatos e roupas sociais para profissionais",
+    iban: "AO06000900000024000157512",
+    bank: "Banco Standard Chartered"
   },
   {
     id: "8",
@@ -145,7 +161,9 @@ export const stores: Store[] = [
     verified: true,
     location: "Mercado Hoji Ya Henda, Box 67",
     image: "https://images.unsplash.com/photo-1513694203232-719a280e022f?w=400",
-    description: "Artigos para casa e decoração moderna"
+    description: "Artigos para casa e decoração moderna",
+    iban: "AO06001000000026000157512",
+    bank: "KBC Bank Angola"
   },
   {
     id: "9",
