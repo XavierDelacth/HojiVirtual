@@ -39,18 +39,18 @@ const Navbar = () => {
             <Link to="/explorar" className="text-foreground/80 hover:text-primary transition-colors font-medium">
               Explorar
             </Link>
-            <button 
+            <button
               onClick={() => scrollToSection("como-funciona")}
               className="text-foreground/80 hover:text-primary transition-colors font-medium"
             >
               Como Funciona
             </button>
-            <button 
+            {/* <button
               onClick={() => scrollToSection("modelo-comissoes")}
               className="text-foreground/80 hover:text-primary transition-colors font-medium"
             >
               Modelo de Comissões
-            </button>
+            </button> */}
           </div>
 
           {/* Desktop Actions */}
@@ -76,20 +76,20 @@ const Navbar = () => {
         {isOpen && (
           <div className="md:hidden py-4 border-t border-border animate-fade-in">
             <div className="flex flex-col gap-3">
-              <Link 
-                to="/explorar" 
+              <Link
+                to="/explorar"
                 className="px-4 py-2 hover:bg-muted rounded-lg transition-colors"
                 onClick={() => setIsOpen(false)}
               >
                 Explorar
               </Link>
-              <button 
+              <button
                 onClick={() => scrollToSection("como-funciona")}
                 className="px-4 py-2 hover:bg-muted rounded-lg transition-colors text-left"
               >
                 Como Funciona
               </button>
-              <button 
+              <button
                 onClick={() => scrollToSection("modelo-comissoes")}
                 className="px-4 py-2 hover:bg-muted rounded-lg transition-colors text-left"
               >
