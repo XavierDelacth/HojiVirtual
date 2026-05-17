@@ -15,6 +15,7 @@ import { resolveBankData } from '@/lib/resolveBankData';
 import { useProducts } from "@/hooks/useProducts";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import AddToCartButton from "@/components/products/AddToCartButton";
 
 const ProductDetails = () => {
   const { id } = useParams();
@@ -128,28 +129,27 @@ const ProductDetails = () => {
         created_at: new Date().toISOString(),
       };
 
-      try {
-        await supabase
-          .from("purchases")
-          .insert({
-            buyer_id: user.id,
-            buyer_name: buyerName,
-            product_name: product.name,
-            product_price: product.price,
-            store_name: storeData.name,
-            store_id: storeData.id || product.storeId,
-            product_id: product.id,
-            product_image: product.images[0],
-            status: "pending",
-          });
-      } catch (e) {
-        console.log('Backend indisponível, guardando localmente');
+      const { error: insertError } = await supabase.from("purchases").insert({
+        buyer_id: user.id,
+        buyer_name: buyerName,
+        product_name: product.name,
+        product_price: product.price,
+        store_name: storeData.name,
+        store_id: storeData.id || product.storeId,
+        product_id: product.id,
+        product_image: product.images[0],
+        status: "pending",
+      });
+
+      if (insertError) {
+        console.error("Erro ao guardar compra no Supabase:", insertError);
       }
 
       try {
         const purchases = JSON.parse(localStorage.getItem('hoji_purchases') || '[]');
         purchases.push(purchase);
         localStorage.setItem('hoji_purchases', JSON.stringify(purchases));
+        window.dispatchEvent(new CustomEvent("hoji-purchase-completed"));
       } catch (e) {
         console.error('Erro ao guardar compra em localStorage:', e);
       }
@@ -437,15 +437,18 @@ const ProductDetails = () => {
                 </div>
               </div>
 
-              <div className="flex flex-col sm:flex-row gap-3 pt-4">
-                <Button variant="hero" size="lg" className="flex-1" onClick={() => setShowPurchaseModal(true)}>
-                  <ShoppingBag className="w-5 h-5 mr-2" />
-                  Comprar Agora
-                </Button>
-                <Button variant="outline" size="lg" className="flex-1">
-                  <MessageCircle className="w-5 h-5 mr-2" />
-                  Contactar Vendedor
-                </Button>
+              <div className="flex flex-col gap-3 pt-4">
+                <AddToCartButton productId={product.id} size="lg" fullWidth />
+                <div className="flex flex-col sm:flex-row gap-3">
+                  <Button variant="hero" size="lg" className="flex-1" onClick={() => setShowPurchaseModal(true)}>
+                    <ShoppingBag className="w-5 h-5 mr-2" />
+                    Comprar Agora
+                  </Button>
+                  <Button variant="outline" size="lg" className="flex-1">
+                    <MessageCircle className="w-5 h-5 mr-2" />
+                    Contactar Vendedor
+                  </Button>
+                </div>
               </div>
             </div>
           </div>

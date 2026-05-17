@@ -2,16 +2,15 @@ import { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
-import { Home, ClipboardList, FileText, User, Settings, LogOut, Menu, X } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
+import { Home, ClipboardList, FileText, Settings, LogOut, Menu, X, ShoppingCart } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 const menuItems = [
   { icon: Home, label: "Dashboard", path: "/dashboard/utilizador" },
   { icon: ClipboardList, label: "Minhas Compras", path: "/dashboard/compras" },
+  { icon: ShoppingCart, label: "Carrinho", path: "/carrinho", emoji: "🛒" },
   { icon: FileText, label: "Comprovativos", path: "/dashboard/comprovativos" },
-  { icon: User, label: "Perfil", path: "/dashboard/perfil" },
 ];
 
 const UserSidebar = () => {
@@ -43,10 +42,6 @@ const UserSidebar = () => {
         </Link>
       </div>
 
-      <div className="p-4">
-        <Badge className="w-full justify-center py-1.5 gradient-primary text-primary-foreground">Plano Grátis</Badge>
-      </div>
-
       <nav className="flex-1 p-4 space-y-1">
         {menuItems.map(item => {
           const isActive = location.pathname === item.path;
@@ -55,7 +50,11 @@ const UserSidebar = () => {
               "flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200",
               isActive ? "bg-primary/10 text-primary font-medium" : "text-muted-foreground hover:bg-muted hover:text-foreground"
             )}>
-              <item.icon className="w-5 h-5" />
+              {"emoji" in item && item.emoji ? (
+                <span className="text-lg w-5 text-center">{item.emoji}</span>
+              ) : (
+                <item.icon className="w-5 h-5" />
+              )}
               <span>{item.label}</span>
             </Link>
           );

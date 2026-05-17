@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { HelmetProvider } from "react-helmet-async";
 import { AuthProvider } from "@/hooks/useAuth";
 import { ProductsProvider } from "@/hooks/useProducts";
+import { CartProvider } from "@/hooks/useCart";
 import ProtectedRoute from "@/components/auth/ProtectedRoute";
 import RoleBasedRoute from "@/components/auth/RoleBasedRoute";
 import Index from "./pages/Index";
@@ -26,6 +27,7 @@ import QRCodes from "./pages/QRCodes";
 import DashboardAnalytics from "./pages/DashboardAnalytics";
 import DashboardConfiguracoes from "./pages/DashboardConfiguracoes";
 import NotFound from "./pages/NotFound";
+import Carrinho from "./pages/Carrinho";
 
 const queryClient = new QueryClient();
 
@@ -35,6 +37,7 @@ const App = () => (
       <TooltipProvider>
         <AuthProvider>
                    <ProductsProvider>
+            <CartProvider>
           <Toaster />
           <Sonner />
           <BrowserRouter>
@@ -42,6 +45,7 @@ const App = () => (
               {/* Public routes */}
               <Route path="/" element={<Index />} />
               <Route path="/explorar" element={<Explorar />} />
+              <Route path="/carrinho" element={<Carrinho />} />
               <Route path="/produto/:id" element={<ProductDetails />} />
               <Route path="/comprovativo/:id" element={<Comprovativo />} />
               <Route path="/login" element={<Login />} />
@@ -112,6 +116,7 @@ const App = () => (
               <Route path="*" element={<NotFound />} />
             </Routes>
           </BrowserRouter>
+            </CartProvider>
                  </ProductsProvider>
         </AuthProvider>
       </TooltipProvider>

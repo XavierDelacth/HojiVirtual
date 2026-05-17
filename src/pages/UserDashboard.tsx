@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { Search, ShoppingBag, Heart, Clock, Star, ChevronRight, LogOut } from "lucide-react";
+import { Search, ShoppingBag, ShoppingCart, Clock, Star, ChevronRight, LogOut } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,8 +8,11 @@ import { Badge } from "@/components/ui/badge";
 import UserSidebar from "@/components/dashboard/UserSidebar";
 import Footer from "@/components/layout/Footer";
 import { useAuth } from "@/hooks/useAuth";
+import { useCart } from "@/hooks/useCart";
 import { useNavigate } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
 import { products as mockProducts } from "@/data/mockData";
+import AddToCartButton from "@/components/products/AddToCartButton";
 
 interface Product {
   id: string;
@@ -24,10 +27,13 @@ interface Product {
 
 const UserDashboard = () => {
   const { user, signOut } = useAuth();
+  const { totalItems } = useCart();
   const navigate = useNavigate();
   const [products, setProducts] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
+  const [recentPurchasesCount, setRecentPurchasesCount] = useState(0);
+  const [isLoadingRecentPurchases, setIsLoadingRecentPurchases] = useState(true);
 
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat('pt-AO').format(price);
@@ -43,6 +49,94 @@ const UserDashboard = () => {
 
     return () => clearTimeout(t);
   }, []);
+
+  useEffect(() => {
+    if (!user) {
+      setRecentPurchasesCount(0);
+      setIsLoadingRecentPurchases(false);
+      return;
+    }
+
+    const fetchRecentPurchasesCount = async () => {
+      setIsLoadingRecentPurchases(true);
+
+      const tenDaysAgo = new Date();
+      tenDaysAgo.setDate(tenDaysAgo.getDate() - 10);
+      const cutoffMs = tenDaysAgo.getTime();
+      const seenIds = new Set<string>();
+      let total = 0;
+
+      const addPurchase = (id: string, createdAt?: string | null) => {
+        const key = String(id);
+        if (seenIds.has(key)) return;
+        const ts = createdAt ? new Date(createdAt).getTime() : Date.now();
+        if (ts < cutoffMs) return;
+        seenIds.add(key);
+        total += 1;
+      };
+
+      const { data, error } = await supabase
+        .from("purchases")
+        .select("id, created_at")
+        .eq("buyer_id", user.id)
+        .gte("created_at", tenDaysAgo.toISOString());
+
+      if (error) {
+        console.error("Erro ao contar compras recentes:", error);
+      } else {
+        data?.forEach((p) => addPurchase(p.id, p.created_at));
+      }
+
+      try {
+        const localPurchases = JSON.parse(
+          localStorage.getItem("hoji_purchases") || "[]"
+        ) as Array<{ id: string; buyer_id?: string; created_at?: string }>;
+        localPurchases
+          .filter((p) => p.buyer_id === user.id)
+          .forEach((p) => addPurchase(p.id, p.created_at));
+      } catch (e) {
+        console.error("Erro ao ler compras locais:", e);
+      }
+
+      setRecentPurchasesCount(total);
+      setIsLoadingRecentPurchases(false);
+    };
+
+    fetchRecentPurchasesCount();
+
+    const channel = supabase
+      .channel(`recent-purchases-${user.id}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "purchases",
+          filter: `buyer_id=eq.${user.id}`,
+        },
+        () => {
+          fetchRecentPurchasesCount();
+        }
+      )
+      .subscribe();
+
+    const onPurchaseCompleted = () => fetchRecentPurchasesCount();
+    const onStorage = (e: StorageEvent) => {
+      if (e.key === "hoji_purchases") fetchRecentPurchasesCount();
+    };
+    const onFocus = () => fetchRecentPurchasesCount();
+
+    window.addEventListener("hoji-purchase-completed", onPurchaseCompleted);
+    window.addEventListener("storage", onStorage);
+    window.addEventListener("focus", onFocus);
+
+    return () => {
+      supabase.removeChannel(channel);
+      window.removeEventListener("hoji-purchase-completed", onPurchaseCompleted);
+      window.removeEventListener("storage", onStorage);
+      window.removeEventListener("focus", onFocus);
+    };
+  }, [user]);
 
   const filteredProducts = products.filter(product =>
     product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -99,14 +193,14 @@ const UserDashboard = () => {
               </div>
             </CardContent>
           </Card>
-          <Card>
+          <Card onClick={() => navigate('/carrinho')} className="cursor-pointer hover:bg-muted/50 transition-colors">
             <CardContent className="p-6 flex items-center gap-4">
               <div className="w-12 h-12 rounded-xl bg-secondary/10 flex items-center justify-center">
-                <Heart className="w-6 h-6 text-secondary" />
+                <ShoppingCart className="w-6 h-6 text-secondary" />
               </div>
               <div>
-                <p className="text-sm text-muted-foreground">Favoritos</p>
-                <p className="text-2xl font-bold">0</p>
+                <p className="text-sm text-muted-foreground">Carrinho</p>
+                <p className="text-2xl font-bold">{totalItems}</p>
               </div>
             </CardContent>
           </Card>
@@ -117,7 +211,10 @@ const UserDashboard = () => {
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Compras Recentes</p>
-                <p className="text-2xl font-bold">0</p>
+                <p className="text-2xl font-bold">
+                  {isLoadingRecentPurchases ? "..." : recentPurchasesCount}
+                </p>
+                <p className="text-xs text-muted-foreground">nos últimos 10 dias</p>
               </div>
             </CardContent>
           </Card>
@@ -163,9 +260,14 @@ const UserDashboard = () => {
           ) : filteredProducts.length > 0 ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
               {filteredProducts.map((product) => (
-                <Link to={`/produto/${product.id}`} key={product.id}>
-                  <Card className="overflow-hidden hover:shadow-lg transition-shadow cursor-pointer group">
-                    <div className="aspect-square relative overflow-hidden">
+                <Card key={product.id} className="overflow-hidden hover:shadow-lg transition-shadow group">
+                  <div
+                    className="aspect-square relative overflow-hidden cursor-pointer"
+                    onClick={() => navigate(`/produto/${product.id}`)}
+                    role="button"
+                    tabIndex={0}
+                    onKeyDown={(e) => e.key === "Enter" && navigate(`/produto/${product.id}`)}
+                  >
                       <img
                         src={product.images[0] || 'https://images.unsplash.com/photo-1595777457583-95e059d581b8?w=400'}
                         alt={product.name}
@@ -184,19 +286,18 @@ const UserDashboard = () => {
                     </div>
                     <CardContent className="p-4">
                       <p className="text-xs text-muted-foreground mb-1">{product.category}</p>
-                      <h3 className="font-semibold mb-2 line-clamp-1">{product.name}</h3>
-                      <div className="flex items-center justify-between">
-                        <p className="text-primary font-bold text-lg">
-                          {formatPrice(product.price)} Kz
-                        </p>
-                        <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                          <Star className="w-4 h-4 fill-secondary text-secondary" />
-                          <span>Novo</span>
-                        </div>
-                      </div>
+                      <h3
+                        className="font-semibold mb-2 line-clamp-1 cursor-pointer hover:text-primary"
+                        onClick={() => navigate(`/produto/${product.id}`)}
+                      >
+                        {product.name}
+                      </h3>
+                      <p className="text-primary font-bold text-lg mb-3">
+                        {formatPrice(product.price)} Kz
+                      </p>
+                      <AddToCartButton productId={product.id} fullWidth />
                     </CardContent>
                   </Card>
-                </Link>
               ))}
             </div>
           ) : (

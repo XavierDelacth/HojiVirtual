@@ -1,9 +1,10 @@
-import { Star, MapPin, BadgeCheck } from "lucide-react";
+import { Star, BadgeCheck } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Product } from "@/data/mockData";
+import AddToCartButton from "@/components/products/AddToCartButton";
 
 interface ProductCardProps {
   product: Product;
@@ -13,12 +14,11 @@ const ProductCard = ({ product }: ProductCardProps) => {
   const navigate = useNavigate();
 
   const formatPrice = (price: number) => {
-    return new Intl.NumberFormat('pt-AO').format(price);
+    return new Intl.NumberFormat("pt-AO").format(price);
   };
 
   return (
     <Card hover className="overflow-hidden group">
-      {/* Image */}
       <div className="relative aspect-square overflow-hidden">
         <img
           src={product.images[0]}
@@ -38,42 +38,41 @@ const ProductCard = ({ product }: ProductCardProps) => {
       </div>
 
       <CardContent className="p-4">
-        {/* Store Info */}
         <div className="flex items-center gap-2 mb-2">
-          <span className="text-xs text-muted-foreground">{product.storeName}</span>
-          <BadgeCheck className="w-3.5 h-3.5 text-trust" />
-        </div>
+            <span className="text-xs text-muted-foreground">{product.storeName}</span>
+            <BadgeCheck className="w-3.5 h-3.5 text-trust" />
+          </div>
 
-        {/* Product Name */}
-        <h3 className="font-semibold text-sm mb-2 line-clamp-2 min-h-[2.5rem]">
-          {product.name}
-        </h3>
+          <h3 className="font-semibold text-sm mb-2 line-clamp-2 min-h-[2.5rem]">
+            {product.name}
+          </h3>
 
-        {/* Rating */}
-        <div className="flex items-center gap-1 mb-3">
-          <Star className="w-4 h-4 fill-secondary text-secondary" />
-          <span className="text-sm font-medium">{product.rating}</span>
-          <span className="text-xs text-muted-foreground">
-            ({product.reviewCount} avaliações)
-          </span>
-        </div>
+          <div className="flex items-center gap-1 mb-3">
+            <Star className="w-4 h-4 fill-secondary text-secondary" />
+            <span className="text-sm font-medium">{product.rating}</span>
+            <span className="text-xs text-muted-foreground">
+              ({product.reviewCount} avaliações)
+            </span>
+          </div>
 
-        {/* Price */}
-        <div className="flex items-center justify-between">
-          <div>
+          <div className="mb-3">
             <span className="text-xl font-bold text-primary">
               {formatPrice(product.price)}
             </span>
             <span className="text-sm text-muted-foreground ml-1">Kz</span>
           </div>
-          <Button 
-            size="sm" 
-            variant="hero"
-            onClick={() => navigate(`/produto/${product.id}`)}
-          >
-            Ver
-          </Button>
-        </div>
+
+          <div className="flex flex-col gap-2">
+            <AddToCartButton productId={product.id} fullWidth />
+            <Button
+              size="sm"
+              variant="outline"
+              className="w-full"
+              onClick={() => navigate(`/produto/${product.id}`)}
+            >
+              Ver
+            </Button>
+          </div>
       </CardContent>
     </Card>
   );

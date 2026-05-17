@@ -2,11 +2,15 @@ import { useState } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { Menu, X, ShoppingBag } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useAuth } from "@/hooks/useAuth";
+import { useCart } from "@/hooks/useCart";
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
+  const { user } = useAuth();
+  const { totalItems } = useCart();
 
   const scrollToSection = (sectionId: string) => {
     if (location.pathname !== "/") {
@@ -21,6 +25,8 @@ const Navbar = () => {
     }
     setIsOpen(false);
   };
+
+  const showCartBadge = user && totalItems > 0;
 
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 bg-card/95 backdrop-blur-md shadow-sm border-b border-border">
@@ -45,23 +51,32 @@ const Navbar = () => {
             >
               Como Funciona
             </button>
-            {/* <button
-              onClick={() => scrollToSection("modelo-comissoes")}
-              className="text-foreground/80 hover:text-primary transition-colors font-medium"
-            >
-              Modelo de Comissões
-            </button> */}
           </div>
 
           {/* Desktop Actions */}
           <div className="hidden md:flex items-center gap-3">
-            <Button variant="ghost" size="sm" onClick={() => navigate("/login")}>
-              Entrar
-            </Button>
-            <Button variant="hero" size="sm" onClick={() => navigate("/registo")}>
-              Começar a Vender
-            </Button>
-          </div>
+              <Button variant="ghost" size="sm" onClick={() => navigate("/login")}>
+                Entrar
+              </Button>
+
+              <button
+                type="button"
+                onClick={() => navigate("/carrinho")}
+                className="relative p-2 rounded-lg hover:bg-muted transition-colors"
+                aria-label="Carrinho"
+              >
+                <span className="text-xl">🛒</span>
+                {showCartBadge && (
+                  <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 flex items-center justify-center rounded-full bg-destructive text-destructive-foreground text-xs font-bold">
+                    {totalItems > 99 ? "99+" : totalItems}
+                  </span>
+                )}
+              </button>
+
+              <Button variant="hero" size="sm" onClick={() => navigate("/registo")}>
+                Começar a Vender
+              </Button>
+            </div>
 
           {/* Mobile Menu Button */}
           <button
@@ -96,10 +111,22 @@ const Navbar = () => {
                 Modelo de Comissões
               </button>
               <div className="border-t border-border pt-3 mt-2 flex flex-col gap-2">
-                <Button variant="ghost" className="w-full justify-center" onClick={() => navigate("/login")}>
+                <Button variant="ghost" className="w-full justify-center" onClick={() => { navigate("/login"); setIsOpen(false); }}>
                   Entrar
                 </Button>
-                <Button variant="hero" className="w-full justify-center" onClick={() => navigate("/registo")}>
+                <Button
+                  variant="outline"
+                  className="w-full justify-center gap-2"
+                  onClick={() => { navigate("/carrinho"); setIsOpen(false); }}
+                >
+                  🛒 Carrinho
+                  {showCartBadge && (
+                    <span className="min-w-[20px] h-5 px-1.5 flex items-center justify-center rounded-full bg-destructive text-destructive-foreground text-xs font-bold">
+                      {totalItems}
+                    </span>
+                  )}
+                </Button>
+                <Button variant="hero" className="w-full justify-center" onClick={() => { navigate("/registo"); setIsOpen(false); }}>
                   Começar a Vender
                 </Button>
               </div>

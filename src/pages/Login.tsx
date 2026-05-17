@@ -17,6 +17,8 @@ const Login = () => {
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
+  const cartMessage = (location.state as { message?: string })?.message;
+
   const redirectBasedOnRole = async (userId: string) => {
     const { data } = await supabase
       .from('user_roles')
@@ -143,6 +145,11 @@ const Login = () => {
               <CardDescription>
                 Insira os seus dados para aceder à plataforma
               </CardDescription>
+              {cartMessage && (
+                <p className="mt-3 text-sm text-primary font-medium bg-primary/10 rounded-lg px-4 py-3">
+                  {cartMessage}
+                </p>
+              )}
             </CardHeader>
             <CardContent className="px-0">
               <form onSubmit={handleSubmit} className="space-y-5">

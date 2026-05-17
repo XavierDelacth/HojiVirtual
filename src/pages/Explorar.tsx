@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
-import { Search, SlidersHorizontal, X, ShoppingBag, Star } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Search, SlidersHorizontal, X, ShoppingBag } from "lucide-react";
+import { Link, useNavigate } from "react-router-dom";
+import AddToCartButton from "@/components/products/AddToCartButton";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 import { Input } from "@/components/ui/input";
@@ -42,6 +43,7 @@ const categories = [
 ];
 
 const Explorar = () => {
+  const navigate = useNavigate();
   const [products, setProducts] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
@@ -221,42 +223,47 @@ const Explorar = () => {
               ) : filteredProducts.length > 0 ? (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                   {filteredProducts.map((product) => (
-                    <Link to={`/produto/${product.id}`} key={product.id}>
-                      <Card className="overflow-hidden hover:shadow-lg transition-shadow cursor-pointer group">
-                        <div className="aspect-square relative overflow-hidden">
-                          <img
-                            src={product.images[0] || 'https://images.unsplash.com/photo-1595777457583-95e059d581b8?w=400'}
-                            alt={product.name}
-                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                          />
-                          {product.stock < 5 && product.stock > 0 && (
-                            <Badge className="absolute top-3 right-3 bg-secondary text-secondary-foreground">
-                              Últimas unidades
-                            </Badge>
-                          )}
-                          {product.stock === 0 && (
-                            <Badge className="absolute top-3 right-3 bg-destructive text-destructive-foreground">
-                              Esgotado
-                            </Badge>
-                          )}
-                          <Badge className="absolute top-3 left-3 bg-muted text-muted-foreground">
-                            {product.category}
+                    <Card key={product.id} className="overflow-hidden hover:shadow-lg transition-shadow group">
+                      <div
+                        className="aspect-square relative overflow-hidden cursor-pointer"
+                        onClick={() => navigate(`/produto/${product.id}`)}
+                        role="button"
+                        tabIndex={0}
+                        onKeyDown={(e) => e.key === "Enter" && navigate(`/produto/${product.id}`)}
+                      >
+                        <img
+                          src={product.images[0] || 'https://images.unsplash.com/photo-1595777457583-95e059d581b8?w=400'}
+                          alt={product.name}
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                        />
+                        {product.stock < 5 && product.stock > 0 && (
+                          <Badge className="absolute top-3 right-3 bg-secondary text-secondary-foreground">
+                            Últimas unidades
                           </Badge>
-                        </div>
-                        <CardContent className="p-4">
-                          <h3 className="font-semibold mb-2 line-clamp-1">{product.name}</h3>
-                          <div className="flex items-center justify-between">
-                            <p className="text-primary font-bold text-lg">
-                              {formatPrice(product.price)} Kz
-                            </p>
-                            <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                              <Star className="w-4 h-4 fill-secondary text-secondary" />
-                              <span>Novo</span>
-                            </div>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    </Link>
+                        )}
+                        {product.stock === 0 && (
+                          <Badge className="absolute top-3 right-3 bg-destructive text-destructive-foreground">
+                            Esgotado
+                          </Badge>
+                        )}
+                        <Badge className="absolute top-3 left-3 bg-muted text-muted-foreground">
+                          {product.category}
+                        </Badge>
+                      </div>
+                      <CardContent className="p-4">
+                          <h3
+                            className="font-semibold mb-1 line-clamp-1 cursor-pointer hover:text-primary"
+                            onClick={() => navigate(`/produto/${product.id}`)}
+                          >
+                            {product.name}
+                          </h3>
+                          <p className="text-xs text-muted-foreground mb-2">{product.storeName}</p>
+                          <p className="text-primary font-bold text-lg mb-3">
+                            {formatPrice(product.price)} Kz
+                          </p>
+                          <AddToCartButton productId={product.id} fullWidth />
+                      </CardContent>
+                    </Card>
                   ))}
                 </div>
               ) : (
