@@ -1,11 +1,12 @@
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
-import HeroSection from "@/components/landing/HeroSection";
-import HowItWorks from "@/components/landing/HowItWorks";
-import FeaturedProductsCarousel from "@/components/landing/FeaturedProductsCarousel";
-import PricingSection from "@/components/landing/PricingSection";
-import FeaturedStoresCarousel from "@/components/landing/FeaturedStoresCarousel";
-import PartnersSection from "@/components/landing/PartnersSection";
+import NewHeroSection from "@/components/landing/NewHeroSection";
+import CategoriesBar from "@/components/landing/CategoriesBar";
+import FeaturedProductsGrid from "@/components/landing/FeaturedProductsGrid";
+import AdvertisementBanners from "@/components/landing/AdvertisementBanners";
+import HowItWorksNew from "@/components/landing/HowItWorksNew";
+import FeaturedStoresGrid from "@/components/landing/FeaturedStoresGrid";
+import PartnersBar from "@/components/landing/PartnersBar";
 import { Helmet } from "react-helmet-async";
 
 const Index = () => {
@@ -16,15 +17,33 @@ const Index = () => {
         <meta name="description" content="Compre e venda produtos locais de forma segura no mercado Hoji Ya Henda digital. A plataforma líder de comércio informal em Angola." />
       </Helmet>
       
-      <div className="min-h-screen bg-background">
+      <div className="min-h-screen bg-[#f8f7f4]">
         <Navbar />
         <main>
-          <HeroSection />
-          <HowItWorks />
-          <FeaturedProductsCarousel />
-          {/* <PricingSection /> */}
-          <FeaturedStoresCarousel />
-          <PartnersSection />
+          {/* 1. NAVBAR - mantido na estrutura de layout */}
+          
+          {/* 2. HERO SECTION - novo design com gradiente e layout flex */}
+          <NewHeroSection />
+          
+          {/* 3. BARRA DE CATEGORIAS - novo componente */}
+          <CategoriesBar />
+          
+          {/* 4. PRODUTOS EM DESTAQUE - grid de 4 colunas */}
+          <FeaturedProductsGrid />
+          
+          {/* 5. BANNERS PUBLICITÁRIOS - novo componente com Multicaixa e Tupuca */}
+          <AdvertisementBanners />
+          
+          {/* 6. COMO FUNCIONA - reestruturado */}
+          <HowItWorksNew />
+          
+          {/* 7. LOJAS REGISTADAS - grid de 4 colunas */}
+          <FeaturedStoresGrid />
+          
+          {/* 8. FAIXA DE PARCEIROS - simplificado */}
+          <PartnersBar />
+          
+          {/* 9. FOOTER - mantido na estrutura de layout */}
         </main>
         <Footer />
       </div>
