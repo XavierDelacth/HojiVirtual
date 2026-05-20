@@ -1,5 +1,6 @@
 import { useState, useEffect, createContext, useContext, ReactNode } from 'react';
 import { products as mockProducts } from '@/data/mockData';
+import { supabase } from '@/integrations/supabase/client';
 
 // ==========================================
 // 📦 TIPOS E INTERFACES
@@ -34,7 +35,7 @@ interface ProductsContextType {
   // Apenas mockados
   mockProducts: Product[];
   // Adicionar novo produto dinâmico
-  addProduct: (product: DynamicProduct) => void;
+  addProduct: (product: DynamicProduct) => Promise<void>;
   // Remover produto dinâmico
   removeProduct: (productId: string) => void;
   // Atualizar produto dinâmico
@@ -73,7 +74,7 @@ export const ProductsProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  // Salva todos os produtos dinâmicos no localStorage
+  // Salva todos os produtos dinâmicos no localStorage (cache/offline fallback)
   const persistDynamicProducts = (productsToSave: DynamicProduct[]) => {
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(productsToSave));
@@ -92,7 +93,7 @@ export const ProductsProvider = ({ children }: { children: ReactNode }) => {
   // 📝 OPERAÇÕES SOBRE PRODUTOS
   // ==========================================
 
-  const addProduct = (product: DynamicProduct) => {
+  const addProduct = async (product: DynamicProduct) => {
     // Validar produto
     if (!product.id || !product.name || !product.storeId) {
       console.error('Produto inválido:', product);
@@ -108,13 +109,41 @@ export const ProductsProvider = ({ children }: { children: ReactNode }) => {
       return;
     }
 
-    setDynamicProducts((prev) => {
-      const next = [...prev, { ...product, id: String(product.id) }];
-      // Persistir
-      persistDynamicProducts(next);
-      return next;
-    });
-    console.log(`✅ Produto adicionado: ${product.name} (${product.storeId})`);
+    // First try to persist to Supabase
+    try {
+      const { data, error } = await supabase
+        .from('products')
+        .insert([product])
+        .select();
+
+      if (error) {
+        console.error('Supabase insert error, falling back to localStorage:', error);
+        // fallback to localStorage only
+        setDynamicProducts((prev) => {
+          const next = [...prev, { ...product, id: String(product.id) }];
+          persistDynamicProducts(next);
+          return next;
+        });
+      } else {
+        // Supabase returned the inserted row(s)
+        const inserted = Array.isArray(data) && data.length > 0 ? data[0] : product;
+        setDynamicProducts((prev) => {
+          const next = [...prev, { ...inserted, id: String((inserted as any).id) } as DynamicProduct];
+          // update local cache as well
+          persistDynamicProducts(next);
+          return next;
+        });
+        console.log(`✅ Produto adicionado no Supabase: ${(inserted as any).id ?? product.id}`);
+      }
+    } catch (e) {
+      console.error('Erro ao persistir produto no Supabase:', e);
+      // fallback
+      setDynamicProducts((prev) => {
+        const next = [...prev, { ...product, id: String(product.id) }];
+        persistDynamicProducts(next);
+        return next;
+      });
+    }
   };
 
   const removeProduct = (productId: string) => {
@@ -171,17 +200,35 @@ export const ProductsProvider = ({ children }: { children: ReactNode }) => {
 
   // Ao montar, carregar produtos persistidos
   useEffect(() => {
-    try {
-      const persisted = loadPersistedProducts();
-      // Filtrar produtos que colidem com mockados
-      const filtered = persisted.filter(p => !mockProductsWithFlag.some(m => m.id === p.id));
-      if (filtered.length > 0) {
-        setDynamicProducts(filtered.map(p => ({ ...p, id: String(p.id) })));
-        console.log(`🔁 Carregados ${filtered.length} produtos persistidos do armazenamento local`);
+    // On mount: try to load from Supabase first, fallback to localStorage cache
+    (async () => {
+      try {
+        const { data, error } = await supabase
+          .from('products')
+          .select('*');
+
+        if (error) {
+          console.warn('Supabase fetch error, loading from localStorage cache instead:', error);
+          const persisted = loadPersistedProducts();
+          const filtered = persisted.filter(p => !mockProductsWithFlag.some(m => m.id === p.id));
+          if (filtered.length > 0) {
+            setDynamicProducts(filtered.map(p => ({ ...p, id: String(p.id) })));
+            console.log(`🔁 Carregados ${filtered.length} produtos do cache local`);
+          }
+        } else if (Array.isArray(data)) {
+          // Map and store fetched products
+          const fetched = (data as any[]).map(p => ({ ...p, id: String(p.id) })) as DynamicProduct[];
+          const filtered = fetched.filter(p => !mockProductsWithFlag.some(m => m.id === p.id));
+          if (filtered.length > 0) {
+            setDynamicProducts(filtered);
+            persistDynamicProducts(filtered);
+            console.log(`🔁 Carregados ${filtered.length} produtos do Supabase`);
+          }
+        }
+      } catch (e) {
+        console.error('Erro ao inicializar produtos persistidos:', e);
       }
-    } catch (e) {
-      console.error('Erro ao inicializar produtos persistidos:', e);
-    }
+    })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 

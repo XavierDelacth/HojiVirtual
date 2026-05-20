@@ -121,7 +121,7 @@ const MinhaLinha = () => {
   }, [user, profile, getStoreProducts]);
 
   // 🛍️ Handler para adicionar novo produto
-  const handleAddProduct = (formData: {
+  const handleAddProduct = async (formData: {
     name: string;
     description: string;
     price: number;
@@ -158,14 +158,17 @@ const MinhaLinha = () => {
       isDynamic: true
     };
 
-    // Adicionar ao contexto global
-    addProduct(newProduct);
-
-    // Atualizar lista local
-    setStoreProducts([...storeProducts, newProduct]);
-
-    toast.success(`✅ Produto "${formData.name}" criado com sucesso!`);
-    console.log(`✅ Novo produto adicionado: ${newProduct.id}`);
+    // Adicionar ao contexto global (persiste via Supabase inside the hook)
+    try {
+      await addProduct(newProduct);
+      // Atualizar lista local
+      setStoreProducts((prev) => [...prev, newProduct]);
+      toast.success(`✅ Produto "${formData.name}" criado com sucesso!`);
+      console.log(`✅ Novo produto adicionado: ${newProduct.id}`);
+    } catch (e) {
+      console.error('Erro ao adicionar produto:', e);
+      toast.error('Erro ao criar produto. Tente novamente.');
+    }
   };
 
   // 🗑️ Handler para eliminar produto
