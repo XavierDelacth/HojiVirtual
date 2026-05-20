@@ -1,18 +1,11 @@
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { ArrowRight } from "lucide-react";
 
-const categories = [
-  { name: "Alimentação", emoji: "🍅" },
-  { name: "Vestuário", emoji: "👗" },
-  { name: "Electrónica", emoji: "🔌" },
-  { name: "Casa", emoji: "🏠" },
-  { name: "Beleza", emoji: "💄" },
-  { name: "Calçado", emoji: "👟" },
-  { name: "Infantil", emoji: "👶" },
-  { name: "Serviços", emoji: "🛠️" },
-];
+import { CATEGORIES as categories } from "@/data/categories";
 
 const CategoriesBar = () => {
+  const navigate = useNavigate(); // Instanciar o hook para navegação
+
   return (
     <section className="bg-white py-6 px-7 mt-6">
       <div className="container mx-auto">
@@ -29,6 +22,7 @@ const CategoriesBar = () => {
           {categories.map((category) => (
             <div
               key={category.name}
+              onClick={() => navigate(`/explorar?categoria=${category.name}`)} // Navegar passando a categoria
               className="p-[10px] rounded-[10px] bg-white border border-[#f0ede8] text-center cursor-pointer transition-all duration-300 hover:border-[#F97316] hover:bg-[#FFF7ED] group"
             >
               <div className="text-[24px] mb-1">{category.emoji}</div>

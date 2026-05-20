@@ -18,7 +18,7 @@ const steps = [
 
 const HowItWorksNew = () => {
   return (
-    <section className="bg-white py-6 px-7 mt-6">
+    <section id="como-funciona" className="bg-white py-6 px-7 mt-6">
       <div className="container mx-auto">
         {/* Título */}
         <div className="text-center mb-6">

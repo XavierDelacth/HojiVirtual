@@ -1,7 +1,22 @@
-import { Link } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import { ShoppingBag, Facebook, Instagram, Twitter, Linkedin } from "lucide-react";
 
 const Footer = () => {
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  const scrollToSection = (sectionId: string) => {
+    if (location.pathname !== "/") {
+      navigate("/");
+      setTimeout(() => {
+        const element = document.getElementById(sectionId);
+        element?.scrollIntoView({ behavior: "smooth" });
+      }, 100);
+    } else {
+      const element = document.getElementById(sectionId);
+      element?.scrollIntoView({ behavior: "smooth" });
+    }
+  };
   return (
     <footer className="bg-foreground text-background">
       <div className="container mx-auto px-4 py-12">
@@ -38,9 +53,16 @@ const Footer = () => {
             <h4 className="font-semibold mb-4">Plataforma</h4>
             <ul className="space-y-2 text-sm text-background/70">
               <li><Link to="/explorar" className="hover:text-primary transition-colors">Explorar Produtos</Link></li>
-              <li><Link to="/como-funciona" className="hover:text-primary transition-colors">Como Funciona</Link></li>
+              <li>
+                <button 
+                  onClick={() => scrollToSection("como-funciona")} 
+                  className="hover:text-primary transition-colors"
+                >
+                  Como Funciona
+                </button>
+              </li>
               <li><Link to="/planos" className="hover:text-primary transition-colors">Planos e Preços</Link></li>
-              <li><Link to="/registo" className="hover:text-primary transition-colors">Tornar-se Vendedor</Link></li>
+              <li><Link to="/registo" className="hover:text-primary transition-colors">Começar a Vender</Link></li>
             </ul>
           </div>
 

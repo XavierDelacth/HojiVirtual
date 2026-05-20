@@ -1,4 +1,5 @@
 import { Button } from "@/components/ui/button";
+import { Link } from "react-router-dom";
 
 const AdvertisementBanners = () => {
   return (
@@ -30,9 +31,11 @@ const AdvertisementBanners = () => {
               </p>
 
               {/* Botão CTA */}
-              <Button className="bg-white text-[#1e3a5f] font-bold text-[11px] px-4 py-1 h-auto rounded-[7px] hover:bg-gray-100">
-                Comprar agora
-              </Button>
+              <Link to="/explorar">
+                <Button className="bg-white text-[#1e3a5f] font-bold text-[11px] px-4 py-1 h-auto rounded-[7px] hover:bg-gray-100">
+                  Comprar agora
+                </Button>
+              </Link>
             </div>
 
             {/* Rodapé */}
@@ -67,10 +70,7 @@ const AdvertisementBanners = () => {
                 Recebe os teus produtos em qualquer ponto de Luanda. Rápido, fiável e acessível.
               </p>
 
-              {/* Botão CTA */}
-              <Button className="bg-white text-[#064E3B] font-bold text-[11px] px-4 py-1 h-auto rounded-[7px] hover:bg-gray-100">
-                Ver zonas de entrega
-              </Button>
+
             </div>
 
             {/* Rodapé */}

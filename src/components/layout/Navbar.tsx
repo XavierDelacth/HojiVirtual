@@ -42,6 +42,9 @@ const Navbar = () => {
 
           {/* Desktop Menu */}
           <div className="hidden md:flex items-center gap-6">
+            <Link to="/" className="text-foreground/80 hover:text-primary transition-colors font-medium">
+              Home
+            </Link>
             <Link to="/explorar" className="text-foreground/80 hover:text-primary transition-colors font-medium">
               Explorar
             </Link>
@@ -91,6 +94,13 @@ const Navbar = () => {
         {isOpen && (
           <div className="md:hidden py-4 border-t border-border animate-fade-in">
             <div className="flex flex-col gap-3">
+              <Link
+                to="/"
+                className="px-4 py-2 hover:bg-muted rounded-lg transition-colors"
+                onClick={() => setIsOpen(false)}
+              >
+                Home
+              </Link>
               <Link
                 to="/explorar"
                 className="px-4 py-2 hover:bg-muted rounded-lg transition-colors"

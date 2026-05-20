@@ -2,10 +2,38 @@ import { useNavigate, Link } from "react-router-dom";
 import { Heart, Star, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { products } from "@/data/mockData";
+import { useCart } from "@/hooks/useCart";
+import { useToast } from "@/hooks/use-toast";
 
 const FeaturedProductsGrid = () => {
   const navigate = useNavigate();
+  const { addToCart } = useCart();
+  const { toast } = useToast();
   const featuredProducts = products.filter(p => p.featured).slice(0, 4);
+
+  const handleAddToCart = async (e: React.MouseEvent, productId: string) => {
+    e.stopPropagation();
+    const result = await addToCart(productId);
+    if (result.success) {
+      toast({
+        title: "Adicionado ao carrinho",
+        description: "Produto adicionado com sucesso!",
+      });
+    } else if (result.needsLogin) {
+      toast({
+        title: "Login necessário",
+        description: "Por favor, faça login para adicionar produtos ao carrinho.",
+        variant: "destructive",
+      });
+      navigate("/login");
+    } else {
+      toast({
+        title: "Erro",
+        description: "Não foi possível adicionar ao carrinho.",
+        variant: "destructive",
+      });
+    }
+  };
 
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat("pt-AO").format(price);
@@ -54,7 +82,7 @@ const FeaturedProductsGrid = () => {
                   {/* Ícone coração */}
                   <button 
                     className="absolute top-2 right-2 bg-white rounded-full p-1.5 hover:bg-gray-100 transition-colors"
-                    onClick={(e) => e.stopPropagation()}
+                    onClick={(e) => handleAddToCart(e, product.id)}
                   >
                     <Heart className="w-4 h-4 text-gray-400 hover:text-red-500" />
                   </button>
@@ -99,7 +127,7 @@ const FeaturedProductsGrid = () => {
                   <div className="flex justify-end">
                     <button 
                       className="bg-[#F97316] text-white w-7 h-7 rounded-full flex items-center justify-center text-sm font-bold hover:bg-[#C2410C] transition-colors"
-                      onClick={(e) => e.stopPropagation()}
+                      onClick={(e) => handleAddToCart(e, product.id)}
                     >
                       +
                     </button>

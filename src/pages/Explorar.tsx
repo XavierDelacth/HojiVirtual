@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Search, SlidersHorizontal, X, ShoppingBag } from "lucide-react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import AddToCartButton from "@/components/products/AddToCartButton";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
@@ -28,26 +28,23 @@ interface Product {
   featured: boolean;
 }
 
-const categories = [
-  "Roupas",
-  "Eletrônicos",
-  "Acessórios",
-  "Calçado",
-  "Beleza",
-  "Casa",
-  "Alimentação",
-  "Artesanato",
-  "Livros",
-  "Desporto",
-  "Outros"
-];
+import { CATEGORIES } from "@/data/categories";
+
+const categories = CATEGORIES.map(c => c.name);
 
 const Explorar = () => {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams(); // Ler parâmetros da URL
   const [products, setProducts] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+  
+  // Inicializar o estado com o valor da URL, se existir
+  const [selectedCategories, setSelectedCategories] = useState<string[]>(() => {
+    const categoria = searchParams.get('categoria');
+    return categoria ? [categoria] : [];
+  });
+  
   const [showFilters, setShowFilters] = useState(false);
 
   // 🎯 Usar hook de produtos para combinar mockados + dinâmicos
@@ -56,6 +53,14 @@ const Explorar = () => {
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat('pt-AO').format(price);
   };
+
+  // Reagir a mudanças no parâmetro da URL e atualizar o filtro activo
+  useEffect(() => {
+    const categoria = searchParams.get('categoria');
+    if (categoria) {
+      setSelectedCategories([categoria]);
+    }
+  }, [searchParams]);
 
   useEffect(() => {
     // 🔄 Atualizar produtos sempre que allProducts mudar
@@ -136,7 +141,10 @@ const Explorar = () => {
               <Button 
                 variant="ghost" 
                 size="sm" 
-                onClick={() => setSelectedCategories([])}
+                onClick={() => {
+                  setSelectedCategories([]);
+                  setSearchParams({}); // Limpar o parâmetro da URL também
+                }}
                 className="text-destructive hover:text-destructive"
               >
                 Limpar filtros
@@ -282,6 +290,7 @@ const Explorar = () => {
                       onClick={() => {
                         setSearchQuery("");
                         setSelectedCategories([]);
+                        setSearchParams({}); // Limpar o parâmetro da URL
                       }}
                     >
                       Limpar filtros

@@ -27,16 +27,9 @@ interface Product {
   created_at: string;
 }
 
-const categories = [
-  "Roupas",
-  "Eletrônicos",
-  "Acessórios",
-  "Calçado",
-  "Beleza",
-  "Casa",
-  "Alimentação",
-  "Outros"
-];
+import { CATEGORIES } from "@/data/categories";
+
+const categories = CATEGORIES.map(c => c.name);
 
 const DashboardProducts = () => {
   const { user } = useAuth();

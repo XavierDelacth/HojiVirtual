@@ -23,14 +23,9 @@ interface ProductFormData {
   images?: string[];
 }
 
-const categories = [
-  "Vestuário",
-  "Alimentação",
-  "Electrónicos",
-  "Beleza",
-  "Casa & Jardim",
-  "Outros"
-];
+import { CATEGORIES } from "@/data/categories";
+
+const categories = CATEGORIES.map(c => c.name);
 
 const AddProductModal = ({ open, onOpenChange, onAdd }: AddProductModalProps) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
