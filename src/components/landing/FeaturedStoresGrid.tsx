@@ -24,7 +24,7 @@ const FeaturedStoresGrid = () => {
         </p>
 
         {/* Grid de lojas */}
-        <div className="grid grid-cols-4 gap-[10px]">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {featuredStores.map((store) => (
             <div
               key={store.id}

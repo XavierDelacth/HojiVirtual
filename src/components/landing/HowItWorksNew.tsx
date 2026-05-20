@@ -31,7 +31,7 @@ const HowItWorksNew = () => {
         </div>
 
         {/* Grid de passos */}
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {steps.map((step, index) => (
             <div
               key={index}

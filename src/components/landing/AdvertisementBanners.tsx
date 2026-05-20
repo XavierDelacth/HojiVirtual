@@ -5,7 +5,7 @@ const AdvertisementBanners = () => {
   return (
     <section className="px-7 mt-6">
       <div className="container mx-auto">
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {/* Banner Esquerdo - Multicaixa Express */}
           <div className="relative overflow-hidden rounded-[14px] min-h-[145px] bg-gradient-to-r from-[#1e3a5f] via-[#2563EB] to-[#3B82F6] p-5 flex flex-col justify-between">
             {/* Emoji decorativo */}

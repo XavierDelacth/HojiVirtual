@@ -18,7 +18,7 @@ const CategoriesBar = () => {
         </div>
 
         {/* Grid de categorias */}
-        <div className="grid grid-cols-8 gap-2">
+        <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 xl:grid-cols-8 gap-3">
           {categories.map((category) => (
             <div
               key={category.name}

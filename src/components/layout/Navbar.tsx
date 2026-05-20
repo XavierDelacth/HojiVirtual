@@ -310,8 +310,8 @@ const Navbar = () => {
                     </span>
                   )}
                 </Button>
-                <Button variant="hero" className="w-full justify-center" onClick={() => { navigate("/registo"); setIsOpen(false); }}>
-                  Começar a Vender
+                <Button variant="hero" className="w-full justify-center gap-2 text-sm" onClick={() => { navigate("/registo"); setIsOpen(false); }}>
+                  🏪 Vender
                 </Button>
               </div>
             </div>

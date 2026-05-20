@@ -57,7 +57,7 @@ const FeaturedProductsGrid = () => {
         </div>
 
         {/* Grid de produtos */}
-        <div className="grid grid-cols-4 gap-[10px] mb-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 mb-6">
           {featuredProducts.map((product, index) => {
             const discountedPrice = getDiscountedPrice(index);
             return (

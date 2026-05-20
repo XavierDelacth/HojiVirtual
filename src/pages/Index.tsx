@@ -17,9 +17,9 @@ const Index = () => {
         <meta name="description" content="Compre e venda produtos locais de forma segura no mercado Hoji Ya Henda digital. A plataforma líder de comércio informal em Angola." />
       </Helmet>
       
-      <div className="min-h-screen bg-[#f8f7f4]">
+      <div className="min-h-screen bg-[#f8f7f4] overflow-x-hidden">
         <Navbar />
-        <main>
+        <main className="pt-20">
           {/* 1. NAVBAR - mantido na estrutura de layout */}
           
           {/* 2. HERO SECTION - novo design com gradiente e layout flex */}

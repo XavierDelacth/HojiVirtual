@@ -19,7 +19,7 @@ const PartnersBar = () => {
         </div>
 
         {/* Badges de parceiros */}
-        <div className="flex flex-wrap justify-center items-center gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 justify-items-center">
           {partners.map((partner) => (
             <div
               key={partner.name}
