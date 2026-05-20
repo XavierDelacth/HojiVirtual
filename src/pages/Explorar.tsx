@@ -95,14 +95,16 @@ const Explorar = () => {
       
       <main className="pt-20 pb-12">
         <div className="container mx-auto px-4">
-          {/* Header */}
           <div className="mb-8">
-            <h1 className="text-3xl md:text-4xl font-bold mb-2">
-              Explorar <span className="text-gradient">Produtos</span>
-            </h1>
-            <p className="text-muted-foreground">
-              Descubra os melhores produtos do mercado Hoji Ya Henda
-            </p>
+            {/* Header */}
+            <div>
+              <h1 className="text-3xl md:text-4xl font-bold mb-2">
+                Explorar <span className="text-gradient">Produtos</span>
+              </h1>
+              <p className="text-muted-foreground">
+                Descubra os melhores produtos do mercado Hoji Ya Henda
+              </p>
+            </div>
           </div>
 
           {/* Search Bar */}
