@@ -117,15 +117,16 @@ const ProductDetails = () => {
         product_id: product.id,
         product_name: product.name,
         product_price: product.price,
-        store_name: storeData.name,
-        store_id: storeData.id || product.storeId,
+        // Usar storeName do objeto resolvido (é o nome correto retornado de resolveBankData)
+        store_name: storeData.storeName || storeData.name || product.storeName || "Loja não identificada",
+        store_id: storeData.storeId || product.storeId,
         buyer_id: user.id,
         buyer_name: buyerName,
         product_image: product.images[0],
         status: "pending",
         iban: storeData.iban,
         bank: storeData.bank,
-        seller_name: storeData.owner || storeData.name,
+        seller_name: storeData.owner || storeData.storeName || storeData.name || "Vendedor",
         created_at: new Date().toISOString(),
       };
 
@@ -134,8 +135,9 @@ const ProductDetails = () => {
         buyer_name: buyerName,
         product_name: product.name,
         product_price: product.price,
-        store_name: storeData.name,
-        store_id: storeData.id || product.storeId,
+        // Usar storeName do objeto resolvido (é o nome correto retornado de resolveBankData)
+        store_name: storeData.storeName || storeData.name || product.storeName || "Loja não identificada",
+        store_id: storeData.storeId || product.storeId,
         product_id: product.id,
         product_image: product.images[0],
         status: "pending",
@@ -394,12 +396,12 @@ const ProductDetails = () => {
                     <div className="flex items-center gap-4">
                       <img
                         src={storeData.image}
-                        alt={storeData.name}
+                        alt={storeData.storeName}
                         className="w-14 h-14 rounded-xl object-cover"
                       />
                       <div className="flex-1">
                         <div className="flex items-center gap-2">
-                          <h3 className="font-semibold">{storeData.name}</h3>
+                          <h3 className="font-semibold">{storeData.storeName}</h3>
                           {storeData.verified && (
                             <BadgeCheck className="w-4 h-4 text-trust" />
                           )}
@@ -540,7 +542,8 @@ const ProductDetails = () => {
               />
               <div className="flex-1">
                 <h4 className="font-medium text-sm">{product?.name}</h4>
-                <p className="text-xs text-muted-foreground">{product?.storeName}</p>
+                {/* Mostrar nome da loja resolvida ou fallback */}
+                <p className="text-xs text-muted-foreground">{storeData?.storeName || product?.storeName || "Loja"}</p>
                 <p className="text-primary font-bold mt-1">
                   {product && formatPrice(product.price)} Kz
                 </p>
@@ -553,7 +556,8 @@ const ProductDetails = () => {
                 
                 <div>
                   <p className="text-xs text-muted-foreground mb-1">Titular da Conta</p>
-                  <p className="font-medium">{storeData.owner || storeData.name}</p>
+                  {/* Usar owner ou fallback para storeName se owner não existir */}
+                  <p className="font-medium">{storeData.owner || storeData.storeName || "Vendedor não identificado"}</p>
                 </div>
 
                 {(storeData as any).bank && (

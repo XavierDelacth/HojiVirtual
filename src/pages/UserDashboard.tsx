@@ -146,195 +146,200 @@ const UserDashboard = () => {
   const userName = user?.user_metadata?.name || user?.email?.split('@')[0] || 'Utilizador';
 
   return (
-    <div className="min-h-screen bg-background">
-      <UserSidebar />
-      <div className="lg:ml-64">
-        <main className="p-4 lg:p-8 container mx-auto">
-        {/* Welcome Section */}
-        <div className="mb-8 flex items-start justify-between">
-          <div>
-            <h1 className="text-3xl font-bold mb-2">
-              Olá, {userName.split(' ')[0]}! 👋
-            </h1>
-            <p className="text-muted-foreground">
-              Explore os melhores produtos do mercado Hoji Ya Henda
-            </p>
-          </div>
-          <div>
-            <Button
-              variant="secondary"
-              size="sm"
-              className="flex items-center"
-              onClick={async () => {
-                try {
-                  await signOut();
-                } catch (e) {
-                  console.error('Sign out error', e);
-                }
-                navigate('/');
-              }}
-            >
-              <LogOut className="w-4 h-4 mr-2" />
-              Sair
-            </Button>
-          </div>
-        </div>
+    <div className="min-h-screen flex flex-col bg-background">
+      <div className="flex flex-row flex-1">
+        <UserSidebar />
 
-        {/* Quick Stats */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
-          <Card>
-            <CardContent className="p-6 flex items-center gap-4">
-              <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center">
-                <ShoppingBag className="w-6 h-6 text-primary" />
-              </div>
+        <div className="lg:ml-64 flex-1">
+          <main className="p-4 lg:p-8 container mx-auto">
+          {/* Welcome Section */}
+            <div className="mb-8 flex items-start justify-between">
               <div>
-                <p className="text-sm text-muted-foreground">Produtos Disponíveis</p>
-                <p className="text-2xl font-bold">{products.length}</p>
-              </div>
-            </CardContent>
-          </Card>
-          <Card onClick={() => navigate('/carrinho')} className="cursor-pointer hover:bg-muted/50 transition-colors">
-            <CardContent className="p-6 flex items-center gap-4">
-              <div className="w-12 h-12 rounded-xl bg-secondary/10 flex items-center justify-center">
-                <ShoppingCart className="w-6 h-6 text-secondary" />
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Carrinho</p>
-                <p className="text-2xl font-bold">{totalItems}</p>
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-6 flex items-center gap-4">
-              <div className="w-12 h-12 rounded-xl bg-accent/10 flex items-center justify-center">
-                <Clock className="w-6 h-6 text-accent" />
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Compras Recentes</p>
-                <p className="text-2xl font-bold">
-                  {isLoadingRecentPurchases ? "..." : recentPurchasesCount}
+                <h1 className="text-3xl font-bold mb-2">
+                  Olá, {userName.split(' ')[0]}! 👋
+                </h1>
+                <p className="text-muted-foreground">
+                  Explore os melhores produtos do mercado Hoji Ya Henda
                 </p>
-                <p className="text-xs text-muted-foreground">nos últimos 10 dias</p>
               </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Search */}
-        <div className="mb-8">
-          <div className="relative max-w-md">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-            <Input
-              placeholder="Pesquisar produtos..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10 h-12"
-            />
-          </div>
-        </div>
-
-        {/* Products Section */}
-        <div className="mb-8">
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-xl font-semibold">Produtos em Destaque</h2>
-            <Link to="/explorar">
-              <Button variant="ghost" className="gap-2">
-                Ver Todos
-                <ChevronRight className="w-4 h-4" />
-              </Button>
-            </Link>
-          </div>
-
-          {isLoading ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-              {[...Array(4)].map((_, i) => (
-                <Card key={i} className="animate-pulse">
-                  <div className="aspect-square bg-muted" />
-                  <CardContent className="p-4">
-                    <div className="h-4 bg-muted rounded mb-2" />
-                    <div className="h-6 bg-muted rounded w-1/2" />
-                  </CardContent>
-                </Card>
-              ))}
+              <div>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  className="flex items-center"
+                  onClick={async () => {
+                    try {
+                      await signOut();
+                    } catch (e) {
+                      console.error('Sign out error', e);
+                    }
+                    navigate('/');
+                  }}
+                >
+                  <LogOut className="w-4 h-4 mr-2" />
+                  Sair
+                </Button>
+              </div>
             </div>
-          ) : filteredProducts.length > 0 ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-              {filteredProducts.map((product) => (
-                <Card key={product.id} className="overflow-hidden hover:shadow-lg transition-shadow group">
-                  <div
-                    className="aspect-square relative overflow-hidden cursor-pointer"
-                    onClick={() => navigate(`/produto/${product.id}`)}
-                    role="button"
-                    tabIndex={0}
-                    onKeyDown={(e) => e.key === "Enter" && navigate(`/produto/${product.id}`)}
-                  >
-                      <img
-                        src={product.images[0] || 'https://images.unsplash.com/photo-1595777457583-95e059d581b8?w=400'}
-                        alt={product.name}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                      />
-                      {product.stock < 5 && product.stock > 0 && (
-                        <Badge className="absolute top-3 right-3 bg-secondary text-secondary-foreground">
-                          Últimas unidades
-                        </Badge>
-                      )}
-                      {product.stock === 0 && (
-                        <Badge className="absolute top-3 right-3 bg-destructive text-destructive-foreground">
-                          Esgotado
-                        </Badge>
-                      )}
-                    </div>
-                    <CardContent className="p-4">
-                      <p className="text-xs text-muted-foreground mb-1">{product.category}</p>
-                      <h3
-                        className="font-semibold mb-2 line-clamp-1 cursor-pointer hover:text-primary"
+
+            {/* Quick Stats */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
+              <Card>
+                <CardContent className="p-6 flex items-center gap-4">
+                  <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center">
+                    <ShoppingBag className="w-6 h-6 text-primary" />
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">Produtos Disponíveis</p>
+                    <p className="text-2xl font-bold">{products.length}</p>
+                  </div>
+                </CardContent>
+              </Card>
+              <Card onClick={() => navigate('/carrinho')} className="cursor-pointer hover:bg-muted/50 transition-colors">
+                <CardContent className="p-6 flex items-center gap-4">
+                  <div className="w-12 h-12 rounded-xl bg-secondary/10 flex items-center justify-center">
+                    <ShoppingCart className="w-6 h-6 text-secondary" />
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">Carrinho</p>
+                    <p className="text-2xl font-bold">{totalItems}</p>
+                  </div>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardContent className="p-6 flex items-center gap-4">
+                  <div className="w-12 h-12 rounded-xl bg-accent/10 flex items-center justify-center">
+                    <Clock className="w-6 h-6 text-accent" />
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">Compras Recentes</p>
+                    <p className="text-2xl font-bold">
+                      {isLoadingRecentPurchases ? "..." : recentPurchasesCount}
+                    </p>
+                    <p className="text-xs text-muted-foreground">nos últimos 10 dias</p>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Search */}
+            <div className="mb-8">
+              <div className="relative max-w-md">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+                <Input
+                  placeholder="Pesquisar produtos..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10 h-12"
+                />
+              </div>
+            </div>
+
+            {/* Products Section */}
+            <div className="mb-8">
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-xl font-semibold">Produtos em Destaque</h2>
+                <Link to="/explorar">
+                  <Button variant="ghost" className="gap-2">
+                    Ver Todos
+                    <ChevronRight className="w-4 h-4" />
+                  </Button>
+                </Link>
+              </div>
+
+              {isLoading ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                  {[...Array(4)].map((_, i) => (
+                    <Card key={i} className="animate-pulse">
+                      <div className="aspect-square bg-muted" />
+                      <CardContent className="p-4">
+                        <div className="h-4 bg-muted rounded mb-2" />
+                        <div className="h-6 bg-muted rounded w-1/2" />
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              ) : filteredProducts.length > 0 ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                  {filteredProducts.map((product) => (
+                    <Card key={product.id} className="overflow-hidden hover:shadow-lg transition-shadow group">
+                      <div
+                        className="aspect-square relative overflow-hidden cursor-pointer"
                         onClick={() => navigate(`/produto/${product.id}`)}
+                        role="button"
+                        tabIndex={0}
+                        onKeyDown={(e) => e.key === "Enter" && navigate(`/produto/${product.id}`)}
                       >
-                        {product.name}
-                      </h3>
-                      <p className="text-primary font-bold text-lg mb-3">
-                        {formatPrice(product.price)} Kz
-                      </p>
-                      <AddToCartButton productId={product.id} fullWidth />
-                    </CardContent>
-                  </Card>
-              ))}
+                          <img
+                            src={product.images[0] || 'https://images.unsplash.com/photo-1595777457583-95e059d581b8?w=400'}
+                            alt={product.name}
+                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                          />
+                          {product.stock < 5 && product.stock > 0 && (
+                            <Badge className="absolute top-3 right-3 bg-secondary text-secondary-foreground">
+                              Últimas unidades
+                            </Badge>
+                          )}
+                          {product.stock === 0 && (
+                            <Badge className="absolute top-3 right-3 bg-destructive text-destructive-foreground">
+                              Esgotado
+                            </Badge>
+                          )}
+                        </div>
+                        <CardContent className="p-4">
+                          <p className="text-xs text-muted-foreground mb-1">{product.category}</p>
+                          <h3
+                            className="font-semibold mb-2 line-clamp-1 cursor-pointer hover:text-primary"
+                            onClick={() => navigate(`/produto/${product.id}`)}
+                          >
+                            {product.name}
+                          </h3>
+                          <p className="text-primary font-bold text-lg mb-3">
+                            {formatPrice(product.price)} Kz
+                          </p>
+                          <AddToCartButton productId={product.id} fullWidth />
+                        </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              ) : (
+                <Card className="p-12 text-center">
+                  <ShoppingBag className="w-16 h-16 mx-auto text-muted-foreground mb-4" />
+                  <h3 className="text-xl font-semibold mb-2">Nenhum produto encontrado</h3>
+                  <p className="text-muted-foreground mb-4">
+                    {searchTerm 
+                      ? "Tente pesquisar por outro termo" 
+                      : "Os vendedores ainda não adicionaram produtos"
+                    }
+                  </p>
+                  <Link to="/explorar">
+                    <Button variant="hero">Explorar Mercado</Button>
+                  </Link>
+                </Card>
+              )}
             </div>
-          ) : (
-            <Card className="p-12 text-center">
-              <ShoppingBag className="w-16 h-16 mx-auto text-muted-foreground mb-4" />
-              <h3 className="text-xl font-semibold mb-2">Nenhum produto encontrado</h3>
-              <p className="text-muted-foreground mb-4">
-                {searchTerm 
-                  ? "Tente pesquisar por outro termo" 
-                  : "Os vendedores ainda não adicionaram produtos"
-                }
-              </p>
-              <Link to="/explorar">
-                <Button variant="hero">Explorar Mercado</Button>
-              </Link>
-            </Card>
-          )}
-        </div>
 
-        {/* CTA Section */}
-        <Card className="bg-gradient-to-r from-primary to-primary/80 text-primary-foreground">
-          <CardContent className="p-8 text-center">
-            <h2 className="text-2xl font-bold mb-2">Quer vender os seus produtos?</h2>
-            <p className="mb-4 opacity-90">
-              Torne-se vendedor e alcance milhares de clientes no HojiVirtual
-            </p>
-            <Link to="/registo">
-              <Button variant="secondary" size="lg">
-                Criar Conta de Vendedor
-              </Button>
-            </Link>
-          </CardContent>
-        </Card>
-        </main>
+            {/* CTA Section */}
+            <Card className="bg-gradient-to-r from-primary to-primary/80 text-primary-foreground">
+              <CardContent className="p-8 text-center">
+                <h2 className="text-2xl font-bold mb-2">Quer vender os seus produtos?</h2>
+                <p className="mb-4 opacity-90">
+                  Torne-se vendedor e alcance milhares de clientes no HojiVirtual
+                </p>
+                <Link to="/registo">
+                  <Button variant="secondary" size="lg">
+                    Criar Conta de Vendedor
+                  </Button>
+                </Link>
+              </CardContent>
+            </Card>
+          </main>
+        </div>
       </div>
 
-      <Footer />
+      <div className="lg:ml-64">
+        <Footer /> {/* Footer movido para fora do layout da sidebar */}
+      </div>
     </div>
   );
 };
