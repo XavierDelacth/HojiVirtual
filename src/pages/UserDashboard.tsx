@@ -146,12 +146,12 @@ const UserDashboard = () => {
   const userName = user?.user_metadata?.name || user?.email?.split('@')[0] || 'Utilizador';
 
   return (
-    <div className="min-h-screen flex flex-col bg-background">
+    <div className="min-h-screen flex flex-col bg-background overflow-x-hidden">
       <div className="flex flex-row flex-1">
         <UserSidebar />
 
         <div className="lg:ml-64 flex-1">
-          <main className="p-4 lg:p-8 container mx-auto">
+          <main className="pt-16 lg:pt-0 p-4 lg:p-8 container mx-auto">
           {/* Welcome Section */}
             <div className="mb-8 flex items-start justify-between">
               <div>
@@ -183,7 +183,7 @@ const UserDashboard = () => {
             </div>
 
             {/* Quick Stats */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
               <Card>
                 <CardContent className="p-6 flex items-center gap-4">
                   <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center">
