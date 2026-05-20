@@ -521,15 +521,17 @@ const ProductDetails = () => {
       </main>
 
       <Dialog open={showPurchaseModal} onOpenChange={setShowPurchaseModal}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
+        {/* max-height para nunca ultrapassar 90% da altura do ecrã e overflow dentro do modal */}
+      <DialogContent className="h-[90vh] max-h-[90vh] overflow-hidden w-full max-w-md mx-4 sm:mx-0">
+        <div className="flex h-full min-h-0 flex-col">
+          <DialogHeader className="sticky top-0 z-10 flex-shrink-0 px-5 pt-5 bg-white">
             <DialogTitle className="text-center">Confirmar Compra</DialogTitle>
             <DialogDescription className="text-center">
               Efetue a transferência para a conta abaixo
             </DialogDescription>
           </DialogHeader>
 
-          <div className="space-y-6 py-4">
+          <div className="flex-1 min-h-0 overflow-y-auto px-5 py-4 space-y-6">
             <div className="flex items-center gap-4 p-4 bg-muted/50 rounded-xl">
               <img
                 src={product?.images[0]}
@@ -615,7 +617,9 @@ const ProductDetails = () => {
                 </div>
               </div>
             </div>
+          </div>
 
+          <div className="flex-shrink-0 px-5 pb-5 pt-4 border-t border-gray-100 bg-white space-y-3">
             <Button 
               variant="hero" 
               className="w-full" 
@@ -626,7 +630,7 @@ const ProductDetails = () => {
             </Button>
 
             {purchaseData && (
-              <div className="pt-2 border-t space-y-2">
+              <div className="space-y-2">
                 <p className="text-sm text-green-600 font-medium text-center">
                   ✓ Compra registada! Referência: {purchaseData.id}
                 </p>
@@ -647,7 +651,8 @@ const ProductDetails = () => {
               </div>
             )}
           </div>
-        </DialogContent>
+        </div>
+      </DialogContent>
       </Dialog>
 
       <Footer />
