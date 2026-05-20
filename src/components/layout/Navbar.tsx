@@ -1,16 +1,146 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { Menu, X, ShoppingBag } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 import { useCart } from "@/hooks/useCart";
 
+interface UserMenuProps {
+  user: any;
+  role?: string | null;
+  onLogout: () => Promise<void>;
+}
+
+const getInitials = (name: string) => {
+  const parts = name.trim().split(" ").filter(Boolean);
+  if (parts.length === 0) return "U";
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+  return `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase();
+};
+
+const UserMenu = ({ user, role, onLogout }: UserMenuProps) => {
+  const [aberto, setAberto] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const fechar = (e: MouseEvent) => {
+      if (!ref.current?.contains(e.target as Node)) {
+        setAberto(false);
+      }
+    };
+
+    document.addEventListener("mousedown", fechar);
+    return () => document.removeEventListener("mousedown", fechar);
+  }, []);
+
+  const name =
+    (user.user_metadata as any)?.name || user.email?.split("@")[0] || "Utilizador";
+  const initials = getInitials(name);
+  const email = user.email || "sem email";
+  const avatarSrc =
+    (user.user_metadata as any)?.avatar_url ||
+    (user.user_metadata as any)?.picture ||
+    (user as any).avatar ||
+    (user as any).photoURL ||
+    null;
+
+  return (
+    <div ref={ref} className="relative">
+      <button
+        type="button"
+        className="w-10 h-10 rounded-full bg-orange-500 text-white font-bold text-sm flex items-center justify-center cursor-pointer"
+        onClick={() => setAberto(!aberto)}
+        aria-label="Abrir menu do utilizador"
+      >
+        {avatarSrc ? (
+          <img
+            src={avatarSrc}
+            alt={name}
+            className="h-full w-full rounded-full object-cover"
+          />
+        ) : (
+          initials
+        )}
+      </button>
+
+      {aberto && (
+        <div className="absolute right-0 top-12 z-50 min-w-[200px] overflow-hidden rounded-xl border border-[#f0ede8] bg-white shadow-lg">
+          <div className="border-b border-[#f0ede8] px-4 py-3">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-full bg-orange-500 text-white font-bold text-sm flex items-center justify-center overflow-hidden">
+                {avatarSrc ? (
+                  <img src={avatarSrc} alt={name} className="h-full w-full object-cover" />
+                ) : (
+                  initials
+                )}
+              </div>
+              <div className="min-w-0">
+                <p className="text-sm font-semibold truncate">{name}</p>
+                <p className="text-xs text-[#999] truncate">{email}</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex flex-col">
+            {/* Links de navegação */}
+            <button
+              type="button"
+              className="flex items-center gap-2 px-4 py-2.5 text-sm text-gray-700 hover:bg-orange-50 hover:text-orange-500 cursor-pointer text-left"
+              onClick={() => {
+                setAberto(false);
+                navigate("/dashboard");
+              }}
+            >
+              <span>🏪</span>
+              O meu Dashboard
+            </button>
+
+            {role === "user" && (
+              <button
+                type="button"
+                className="flex items-center gap-2 px-4 py-2.5 text-sm text-gray-700 hover:bg-orange-50 hover:text-orange-500 cursor-pointer text-left"
+                onClick={() => {
+                  setAberto(false);
+                  window.location.pathname = "/dashboard/compras";
+                }}
+              >
+                <span>📦</span>
+                Os meus Pedidos
+              </button>
+            )}
+
+            <div className="border-t border-[#f0ede8] my-1" />
+
+            <button
+              type="button"
+              className="flex items-center gap-2 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 cursor-pointer w-full text-left"
+              onClick={async () => {
+                setAberto(false);
+                await onLogout();
+              }}
+            >
+              <span>🚪</span>
+              Terminar Sessão
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
-  const { user } = useAuth();
+  const { user, role, signOut } = useAuth();
   const { totalItems } = useCart();
+
+  const handleLogout = async () => {
+    await signOut();
+    navigate("/login");
+  };
 
   const scrollToSection = (sectionId: string) => {
     if (location.pathname !== "/") {
@@ -58,16 +188,20 @@ const Navbar = () => {
 
           {/* Desktop Actions */}
           <div className="hidden md:flex items-center gap-3">
-              <Button variant="ghost" size="sm" onClick={() => navigate("/login")}>
+            {user ? (
+              <UserMenu user={user} role={role} onLogout={handleLogout} />
+            ) : (
+              <Button variant="ghost" size="sm" onClick={() => navigate("/login")}> 
                 Entrar
               </Button>
+            )}
 
-              <button
-                type="button"
-                onClick={() => navigate("/carrinho")}
-                className="relative p-2 rounded-lg hover:bg-muted transition-colors"
-                aria-label="Carrinho"
-              >
+            <button
+              type="button"
+              onClick={() => navigate("/carrinho")}
+              className="relative p-2 rounded-lg hover:bg-muted transition-colors"
+              aria-label="Carrinho"
+            >
                 <span className="text-xl">🛒</span>
                 {showCartBadge && (
                   <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 flex items-center justify-center rounded-full bg-destructive text-destructive-foreground text-xs font-bold">
@@ -121,13 +255,53 @@ const Navbar = () => {
                 Modelo de Comissões
               </button>
               <div className="border-t border-border pt-3 mt-2 flex flex-col gap-2">
-                <Button variant="ghost" className="w-full justify-center" onClick={() => { navigate("/login"); setIsOpen(false); }}>
-                  Entrar
-                </Button>
+                {user ? (
+                  <>
+                    <button
+                      type="button"
+                      className="text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-orange-50 hover:text-orange-500 rounded-lg"
+                      onClick={() => {
+                        navigate("/dashboard");
+                        setIsOpen(false);
+                      }}
+                    >
+                      🏪 O meu Dashboard
+                    </button>
+                    {role === "user" && (
+                      <button
+                        type="button"
+                        className="text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-orange-50 hover:text-orange-500 rounded-lg"
+                        onClick={() => {
+                          navigate("/dashboard/compras");
+                          setIsOpen(false);
+                        }}
+                      >
+                        📦 Os meus Pedidos
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      className="text-left px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 rounded-lg"
+                      onClick={async () => {
+                        await handleLogout();
+                        setIsOpen(false);
+                      }}
+                    >
+                      🚪 Terminar Sessão
+                    </button>
+                  </>
+                ) : (
+                  <Button variant="ghost" className="w-full justify-center" onClick={() => { navigate("/login"); setIsOpen(false); }}>
+                    Entrar
+                  </Button>
+                )}
                 <Button
                   variant="outline"
                   className="w-full justify-center gap-2"
-                  onClick={() => { navigate("/carrinho"); setIsOpen(false); }}
+                  onClick={() => {
+                    navigate("/carrinho");
+                    setIsOpen(false);
+                  }}
                 >
                   🛒 Carrinho
                   {showCartBadge && (
