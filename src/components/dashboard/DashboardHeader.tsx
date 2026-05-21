@@ -19,7 +19,7 @@ const DashboardHeader = ({ title }: DashboardHeaderProps) => {
       <Sheet>
         <SheetTrigger asChild>
           <Button variant="ghost" size="icon" className="lg:hidden mr-2">
-            <Menu className="w-5 h-5" />
+            
           </Button>
         </SheetTrigger>
         <SheetContent side="left" className="p-0 w-64">
@@ -34,12 +34,7 @@ const DashboardHeader = ({ title }: DashboardHeaderProps) => {
               </Link>
             </div>
             
-            {/* Plan Badge */}
-            <div className="p-4">
-              <Badge className="w-full justify-center py-1.5 gradient-primary text-primary-foreground">
-                Plano Premium
-              </Badge>
-            </div>
+
 
             {/* Mobile Nav Links */}
             <nav className="p-4 space-y-1">

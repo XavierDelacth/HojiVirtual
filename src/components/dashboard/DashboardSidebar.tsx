@@ -65,12 +65,7 @@ const DashboardSidebar = () => {
         </Link>
       </div>
 
-      {/* Plan Badge */}
-      <div className="p-4">
-        <Badge className="w-full justify-center py-1.5 gradient-primary text-primary-foreground">
-          Plano Premium
-        </Badge>
-      </div>
+
 
       {/* Navigation */}
       <nav className="flex-1 p-4 space-y-1">
