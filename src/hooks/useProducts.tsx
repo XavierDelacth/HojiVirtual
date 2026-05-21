@@ -1,5 +1,7 @@
 import { useState, useEffect, createContext, useContext, ReactNode } from 'react';
 import { products as mockProducts } from '@/data/mockData';
+import { supabase } from '@/integrations/supabase/client';
+import type { Database } from '@/integrations/supabase/types';
 
 // ==========================================
 // 📦 TIPOS E INTERFACES
@@ -34,9 +36,9 @@ interface ProductsContextType {
   // Apenas mockados
   mockProducts: Product[];
   // Adicionar novo produto dinâmico
-  addProduct: (product: DynamicProduct) => void;
+  addProduct: (product: DynamicProduct) => Promise<boolean>;
   // Remover produto dinâmico
-  removeProduct: (productId: string) => void;
+  removeProduct: (productId: string) => Promise<boolean>;
   // Atualizar produto dinâmico
   updateProduct: (productId: string, updates: Partial<DynamicProduct>) => void;
   // Obter produtos de uma loja específica
@@ -56,29 +58,61 @@ export const ProductsProvider = ({ children }: { children: ReactNode }) => {
   const [dynamicProducts, setDynamicProducts] = useState<DynamicProduct[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
-  // Chave para persistência no localStorage
-  const STORAGE_KEY = 'hoji_dynamic_products_v1';
+  const mapServerProduct = (
+    row: Database['public']['Tables']['products']['Row']
+  ): DynamicProduct => ({
+    id: String(row.id),
+    name: row.name,
+    description: row.description ?? '',
+    price: row.price,
+    stock: row.stock,
+    category: row.category,
+    images: row.images ?? [],
+    storeId: `store_${row.seller_id}`,
+    storeName: '',
+    rating: 0,
+    reviewCount: 0,
+    featured: false,
+    isDynamic: true,
+    sellerId: row.seller_id,
+  });
 
-  // Carrega produtos persistidos do localStorage
-  const loadPersistedProducts = (): DynamicProduct[] => {
-    try {
-      const raw = localStorage.getItem(STORAGE_KEY) || '[]';
-      const parsed = JSON.parse(raw) as DynamicProduct[];
-      if (!Array.isArray(parsed)) return [];
-      // Garantir que todos os ids sejam strings e filtrar duplicados com mock
-      return parsed.map(p => ({ ...p, id: String(p.id) }));
-    } catch (e) {
-      console.error('Falha ao carregar produtos persistidos:', e);
-      return [];
-    }
-  };
+  const loadServerProducts = async () => {
+    setIsLoading(true);
 
-  // Salva todos os produtos dinâmicos no localStorage
-  const persistDynamicProducts = (productsToSave: DynamicProduct[]) => {
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(productsToSave));
-    } catch (e) {
-      console.error('Falha ao persistir produtos:', e);
+      // Hide test products first (safety measure)
+      const productIds = [
+        '7293fee2-9339-419b-bb0a-3c2462202779',
+        '9f00790e-86df-48c4-8252-732b882a684c',
+        '7c94008e-5822-481a-b0f3-7768387c8a50',
+        '5cbb73d1-c3eb-45e6-a835-94a4c489d706'
+      ];
+      
+      await supabase
+        .from('products')
+        .update({ is_active: false })
+        .in('id', productIds)
+        .catch(() => {
+          // Silencioso se falhar
+        });
+
+      const { data, error } = await supabase
+        .from('products')
+        .select('*')
+        .eq('is_active', true);
+
+      if (error) {
+        console.error('Falha ao carregar produtos do Supabase:', error);
+        return;
+      }
+
+      setDynamicProducts((data ?? []).map(mapServerProduct));
+      console.log(`🔁 Carregados ${(data ?? []).length} produtos do Supabase`);
+    } catch (error) {
+      console.error('Falha ao carregar produtos do Supabase:', error);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -92,11 +126,11 @@ export const ProductsProvider = ({ children }: { children: ReactNode }) => {
   // 📝 OPERAÇÕES SOBRE PRODUTOS
   // ==========================================
 
-  const addProduct = (product: DynamicProduct) => {
+  const addProduct = async (product: DynamicProduct): Promise<boolean> => {
     // Validar produto
-    if (!product.id || !product.name || !product.storeId) {
-      console.error('Produto inválido:', product);
-      return;
+    if (!product.id || !product.name || !product.storeId || !product.sellerId) {
+      console.error('Produto inválido ou sem sellerId:', product);
+      return false;
     }
 
     // Verificar duplicação de ID
@@ -105,28 +139,62 @@ export const ProductsProvider = ({ children }: { children: ReactNode }) => {
       mockProductsWithFlag.some((p) => p.id === product.id)
     ) {
       console.error('Produto com ID duplicado:', product.id);
-      return;
+      return false;
     }
 
-    setDynamicProducts((prev) => {
-      const next = [...prev, { ...product, id: String(product.id) }];
-      // Persistir
-      persistDynamicProducts(next);
-      return next;
-    });
-    console.log(`✅ Produto adicionado: ${product.name} (${product.storeId})`);
+    try {
+      const { data, error } = await supabase
+        .from('products')
+        .insert({
+          id: String(product.id),
+          name: product.name,
+          description: product.description || null,
+          price: product.price,
+          stock: product.stock,
+          category: product.category,
+          images: product.images.length > 0 ? product.images : null,
+          seller_id: product.sellerId,
+          is_active: true,
+        })
+        .select()
+        .single();
+
+      if (error || !data) {
+        console.error('Erro ao adicionar produto no Supabase:', error);
+        return false;
+      }
+
+      const saved = mapServerProduct(data);
+      setDynamicProducts((prev) => [...prev, saved]);
+      console.log(`✅ Produto adicionado: ${saved.name} (${saved.id})`);
+      return true;
+    } catch (error) {
+      console.error('Erro ao adicionar produto no Supabase:', error);
+      return false;
+    }
   };
 
-  const removeProduct = (productId: string) => {
+  const removeProduct = async (productId: string): Promise<boolean> => {
     const isMocked = mockProductsWithFlag.some((p) => p.id === productId);
 
     if (isMocked) {
       console.warn('❌ Não é permitido remover produtos mockados');
-      return;
+      return false;
     }
 
-    setDynamicProducts((prev) => prev.filter((p) => p.id !== productId));
-    console.log(`🗑️ Produto removido: ${productId}`);
+    try {
+      const { error } = await supabase.from('products').delete().eq('id', productId);
+      if (error) {
+        console.error('Falha ao remover produto do Supabase:', error);
+        return false;
+      }
+      setDynamicProducts((prev) => prev.filter((p) => p.id !== productId));
+      console.log(`🗑️ Produto removido: ${productId}`);
+      return true;
+    } catch (error) {
+      console.error('Erro ao remover produto do Supabase:', error);
+      return false;
+    }
   };
 
   const updateProduct = (productId: string, updates: Partial<DynamicProduct>) => {
@@ -152,44 +220,26 @@ export const ProductsProvider = ({ children }: { children: ReactNode }) => {
   const clearDynamicProducts = () => {
     setDynamicProducts([]);
     console.log('🧹 Todos os produtos dinâmicos foram limpos');
-    // Limpar persistência
-    try {
-      localStorage.removeItem(STORAGE_KEY);
-    } catch (e) {
-      console.error('Falha ao limpar produtos persistidos:', e);
-    }
   };
 
   // ==========================================
   // 🔄 COMBINAR PRODUTOS
   // ==========================================
 
-  const allProducts: Product[] = [
-    ...mockProductsWithFlag,
-    ...dynamicProducts,
-  ];
+  const allProducts: Product[] = [...mockProductsWithFlag, ...dynamicProducts].filter(
+    (p, index, self) => index === self.findIndex((x) => x.id === p.id)
+  );
 
-  // Ao montar, carregar produtos persistidos
   useEffect(() => {
     try {
-      const persisted = loadPersistedProducts();
-      // Filtrar produtos que colidem com mockados
-      const filtered = persisted.filter(p => !mockProductsWithFlag.some(m => m.id === p.id));
-      if (filtered.length > 0) {
-        setDynamicProducts(filtered.map(p => ({ ...p, id: String(p.id) })));
-        console.log(`🔁 Carregados ${filtered.length} produtos persistidos do armazenamento local`);
-      }
+      localStorage.removeItem('hoji_dynamic_products_v1');
     } catch (e) {
-      console.error('Erro ao inicializar produtos persistidos:', e);
+      console.error('Falha ao limpar hoji_dynamic_products_v1 dentro do provider:', e);
     }
+
+    loadServerProducts();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-
-  // Sempre que dynamicProducts mudar, persistir (redundante com persistDynamicProducts na adição,
-  // mas útil para atualizações/remoções realizadas por outras funções)
-  useEffect(() => {
-    persistDynamicProducts(dynamicProducts);
-  }, [dynamicProducts]);
 
   const value: ProductsContextType = {
     allProducts,

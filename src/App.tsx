@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -31,16 +32,25 @@ import Carrinho from "./pages/Carrinho";
 
 const queryClient = new QueryClient();
 
-const App = () => (
-  <HelmetProvider>
-    <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <AuthProvider>
-                   <ProductsProvider>
-            <CartProvider>
-          <Toaster />
-          <Sonner />
-          <BrowserRouter>
+const App = () => {
+  useEffect(() => {
+    try {
+      localStorage.removeItem('hoji_dynamic_products_v1');
+    } catch (error) {
+      console.error('Falha ao limpar o cache antigo do localStorage:', error);
+    }
+  }, []);
+
+  return (
+    <HelmetProvider>
+      <QueryClientProvider client={queryClient}>
+        <TooltipProvider>
+          <AuthProvider>
+            <ProductsProvider>
+              <CartProvider>
+                <Toaster />
+                <Sonner />
+                <BrowserRouter>
             <Routes>
               {/* Public routes */}
               <Route path="/" element={<Index />} />
@@ -116,12 +126,13 @@ const App = () => (
               <Route path="*" element={<NotFound />} />
             </Routes>
           </BrowserRouter>
-            </CartProvider>
-                 </ProductsProvider>
-        </AuthProvider>
-      </TooltipProvider>
-    </QueryClientProvider>
-  </HelmetProvider>
-);
+              </CartProvider>
+            </ProductsProvider>
+          </AuthProvider>
+        </TooltipProvider>
+      </QueryClientProvider>
+    </HelmetProvider>
+  );
+};
 
 export default App;

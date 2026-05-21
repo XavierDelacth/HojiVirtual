@@ -18,6 +18,7 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
 const args = process.argv.slice(2);
 const idArgs = args.filter((arg) => !arg.startsWith('--'));
 const sellerIdArg = args.find((arg) => arg.startsWith('--seller-id='));
+const fileArg = args.find((arg) => arg.startsWith('--file='));
 const allArg = args.includes('--all');
 const confirmArg = args.includes('--yes');
 
@@ -36,21 +37,55 @@ if (!confirmArg) {
 
 (async () => {
   try {
-    if (!idArgs.length && !sellerIdArg && !allArg) {
+    if (!idArgs.length && !sellerIdArg && !allArg && !fileArg) {
       console.error('No deletion filter provided. Use product IDs, --seller-id, or --all.');
       process.exit(1);
     }
 
     const query = supabase.from('products').delete();
-    if (idArgs.length) {
-      query.in('id', idArgs);
-    }
-    if (sellerIdArg) {
-      const sellerId = sellerIdArg.split('=')[1];
-      query.eq('seller_id', sellerId);
-    }
-    if (allArg) {
-      // no filters; delete all rows
+
+    // If a JSON export file is provided, prefer its IDs / seller_ids
+    if (fileArg) {
+      const fs = require('fs');
+      const filePath = fileArg.split('=')[1];
+      if (!fs.existsSync(filePath)) {
+        console.error('File not found:', filePath);
+        process.exit(1);
+      }
+      let raw;
+      try {
+        raw = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+      } catch (e) {
+        console.error('Failed to parse JSON file:', e.message);
+        process.exit(1);
+      }
+
+      const arr = Array.isArray(raw) ? raw : [];
+      const ids = Array.from(new Set(arr.map((i) => i && (i.id || i.id === 0) ? String(i.id) : null).filter(Boolean)));
+      const sellerIds = Array.from(new Set(arr.map((i) => i && (i.seller_id || i.sellerId) ? String(i.seller_id || i.sellerId) : null).filter(Boolean)));
+
+      if (ids.length) {
+        query.in('id', ids);
+      } else if (sellerIds.length) {
+        // If multiple seller ids found, use `in`, otherwise eq
+        if (sellerIds.length === 1) query.eq('seller_id', sellerIds[0]);
+        else query.in('seller_id', sellerIds);
+      } else {
+        console.error('No recognizable ids or seller_id fields found in file');
+        process.exit(1);
+      }
+
+    } else {
+      if (idArgs.length) {
+        query.in('id', idArgs);
+      }
+      if (sellerIdArg) {
+        const sellerId = sellerIdArg.split('=')[1];
+        query.eq('seller_id', sellerId);
+      }
+      if (allArg) {
+        // no filters; delete all rows
+      }
     }
 
     const { data, error } = await query;

@@ -121,7 +121,7 @@ const MinhaLinha = () => {
   }, [user, profile, getStoreProducts]);
 
   // 🛍️ Handler para adicionar novo produto
-  const handleAddProduct = (formData: {
+  const handleAddProduct = async (formData: {
     name: string;
     description: string;
     price: number;
@@ -158,21 +158,29 @@ const MinhaLinha = () => {
       isDynamic: true
     };
 
-    // Adicionar ao contexto global
-    addProduct(newProduct);
+    // Adicionar ao contexto global e persistir no Supabase
+    const success = await addProduct(newProduct);
+    if (!success) {
+      toast.error('Erro ao salvar produto. Tente novamente.');
+      return;
+    }
 
-    // Atualizar lista local
-    setStoreProducts([...storeProducts, newProduct]);
+    // Atualizar lista local apenas quando o produto foi salvo com sucesso
+    setStoreProducts((prev) => [...prev, newProduct]);
 
     toast.success(`✅ Produto "${formData.name}" criado com sucesso!`);
     console.log(`✅ Novo produto adicionado: ${newProduct.id}`);
   };
 
   // 🗑️ Handler para eliminar produto
-  const handleDeleteProduct = (productId: string) => {
-    removeProduct(productId);
-    setStoreProducts(storeProducts.filter(p => p.id !== productId));
-    toast.success('✅ Produto eliminado com sucesso!');
+  const handleDeleteProduct = async (productId: string) => {
+    const success = await removeProduct(productId);
+    if (success) {
+      setStoreProducts(storeProducts.filter(p => p.id !== productId));
+      toast.success('✅ Produto eliminado com sucesso!');
+    } else {
+      toast.error('Erro ao eliminar produto. Tente novamente.');
+    }
   };
 
   // Use profile data or fallback to defaults
