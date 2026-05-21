@@ -33,7 +33,7 @@ const AdvertisementBanners = () => {
               {/* Botão CTA */}
               <Link to="/explorar">
                 <Button className="bg-white text-[#1e3a5f] font-bold text-[11px] px-4 py-1 h-auto rounded-[7px] hover:bg-gray-100">
-                  Comprar agora
+                  Adquira agora
                 </Button>
               </Link>
             </div>
