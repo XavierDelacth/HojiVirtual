@@ -1,9 +1,11 @@
 import { useNavigate } from "react-router-dom";
 import { ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useAuth } from "@/hooks/useAuth";
 
 const NewHeroSection = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
 
   return (
     <section className="bg-gradient-to-r from-[#7C2D12] via-[#C2410C] to-[#F97316] text-white py-16 px-4 sm:px-6 lg:px-7">
@@ -36,12 +38,14 @@ const NewHeroSection = () => {
               >
                 Explorar produtos
               </Button>
-              <Button
-                onClick={() => navigate("/registo")}
-                className="w-full sm:w-auto bg-transparent border-2 border-white text-white font-bold px-6 py-3 text-sm rounded-lg hover:bg-white/10"
-              >
-                Vender aqui <ArrowRight className="w-4 h-4 ml-1" />
-              </Button>
+              {!user && (
+                <Button
+                  onClick={() => navigate("/registo")}
+                  className="w-full sm:w-auto bg-transparent border-2 border-white text-white font-bold px-6 py-3 text-sm rounded-lg hover:bg-white/10"
+                >
+                  Vender aqui <ArrowRight className="w-4 h-4 ml-1" />
+                </Button>
+              )}
             </div>
           </div>
 

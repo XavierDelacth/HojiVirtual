@@ -96,20 +96,6 @@ const UserMenu = ({ user, role, onLogout }: UserMenuProps) => {
               O meu Dashboard
             </button>
 
-            {role === "user" && (
-              <button
-                type="button"
-                className="flex items-center gap-2 px-4 py-2.5 text-sm text-gray-700 hover:bg-orange-50 hover:text-orange-500 cursor-pointer text-left"
-                onClick={() => {
-                  setAberto(false);
-                  window.location.pathname = "/dashboard/compras";
-                }}
-              >
-                <span>📦</span>
-                Os meus Pedidos
-              </button>
-            )}
-
             <div className="border-t border-[#f0ede8] my-1" />
 
             <button
@@ -210,9 +196,11 @@ const Navbar = () => {
                 )}
               </button>
 
-              <Button variant="hero" size="sm" onClick={() => navigate("/registo")}>
-                Começar a Vender
-              </Button>
+              {!user && (
+                <Button variant="hero" size="sm" onClick={() => navigate("/registo")}>
+                  Começar a Vender
+                </Button>
+              )}
             </div>
 
           {/* Mobile Menu Button */}
@@ -247,12 +235,6 @@ const Navbar = () => {
                 className="px-4 py-2 hover:bg-muted rounded-lg transition-colors text-left"
               >
                 Como Funciona
-              </button>
-              <button
-                onClick={() => scrollToSection("modelo-comissoes")}
-                className="px-4 py-2 hover:bg-muted rounded-lg transition-colors text-left"
-              >
-                Modelo de Comissões
               </button>
               <div className="border-t border-border pt-3 mt-2 flex flex-col gap-2">
                 {user ? (
@@ -310,9 +292,11 @@ const Navbar = () => {
                     </span>
                   )}
                 </Button>
-                <Button variant="hero" className="w-full justify-center gap-2 text-sm" onClick={() => { navigate("/registo"); setIsOpen(false); }}>
-                  🏪 Vender
-                </Button>
+                {!user && (
+                  <Button variant="hero" className="w-full justify-center gap-2 text-sm" onClick={() => { navigate("/registo"); setIsOpen(false); }}>
+                    🏪 Vender
+                  </Button>
+                )}
               </div>
             </div>
           </div>
