@@ -444,7 +444,7 @@ const ProductDetails = () => {
                 <div className="flex flex-col sm:flex-row gap-3">
                   <Button variant="hero" size="lg" className="flex-1" onClick={() => setShowPurchaseModal(true)}>
                     <ShoppingBag className="w-5 h-5 mr-2" />
-                    Comprar Agora
+                    Adquira Já
                   </Button>
                   <Button variant="outline" size="lg" className="flex-1">
                     <MessageCircle className="w-5 h-5 mr-2" />
