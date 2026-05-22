@@ -339,12 +339,7 @@ const DashboardProducts = () => {
               </p>
             </div>
             <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
-              <DialogTrigger asChild>
-                <Button variant="hero" onClick={resetForm}>
-                  <Plus className="w-4 h-4 mr-2" />
-                  Adicionar Produto
-                </Button>
-              </DialogTrigger>
+            
               <DialogContent className="max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
                   <DialogTitle>Adicionar Novo Produto</DialogTitle>
@@ -431,10 +426,7 @@ const DashboardProducts = () => {
               <p className="text-muted-foreground mb-6">
                 Comece a adicionar produtos à sua loja agora!
               </p>
-              <Button variant="hero" onClick={() => setIsAddOpen(true)}>
-                <Plus className="w-4 h-4 mr-2" />
-                Adicionar Primeiro Produto
-              </Button>
+              
             </div>
           )}
         </main>
