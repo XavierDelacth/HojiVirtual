@@ -159,14 +159,14 @@ const MinhaLinha = () => {
     };
 
     // Adicionar ao contexto global e persistir no Supabase
-    const success = await addProduct(newProduct);
-    if (!success) {
+    const savedProduct = await addProduct(newProduct);
+    if (!savedProduct) {
       toast.error('Erro ao salvar produto. Tente novamente.');
       return;
     }
 
     // Atualizar lista local apenas quando o produto foi salvo com sucesso
-    setStoreProducts((prev) => [...prev, newProduct]);
+    setStoreProducts((prev) => [...prev, savedProduct]);
 
     toast.success(`✅ Produto "${formData.name}" criado com sucesso!`);
     console.log(`✅ Novo produto adicionado: ${newProduct.id}`);

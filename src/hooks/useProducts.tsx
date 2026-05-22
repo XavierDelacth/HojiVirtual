@@ -36,7 +36,7 @@ interface ProductsContextType {
   // Apenas mockados
   mockProducts: Product[];
   // Adicionar novo produto dinâmico
-  addProduct: (product: DynamicProduct) => Promise<boolean>;
+  addProduct: (product: DynamicProduct) => Promise<DynamicProduct | null>;
   // Remover produto dinâmico
   removeProduct: (productId: string) => Promise<boolean>;
   // Atualizar produto dinâmico
@@ -59,7 +59,8 @@ export const ProductsProvider = ({ children }: { children: ReactNode }) => {
   const [isLoading, setIsLoading] = useState(false);
 
   const mapServerProduct = (
-    row: Database['public']['Tables']['products']['Row']
+    row: Database['public']['Tables']['products']['Row'],
+    storeName?: string
   ): DynamicProduct => ({
     id: String(row.id),
     name: row.name,
@@ -69,13 +70,21 @@ export const ProductsProvider = ({ children }: { children: ReactNode }) => {
     category: row.category,
     images: row.images ?? [],
     storeId: `store_${row.seller_id}`,
-    storeName: '',
+    storeName:
+      storeName || `Loja de ${row.seller_id.slice(0, 6)}`,
     rating: 0,
     reviewCount: 0,
     featured: false,
     isDynamic: true,
     sellerId: row.seller_id,
   });
+
+  const hiddenProductNames = new Set(['tele', 'akamaru']);
+  const isHiddenProduct = (name: string) =>
+    hiddenProductNames.has(name.trim().toLowerCase());
+  const filterHiddenProducts = <T extends { name: string }>(
+    items: T[]
+  ): T[] => items.filter((item) => !isHiddenProduct(item.name));
 
   const loadServerProducts = async () => {
     setIsLoading(true);
@@ -88,14 +97,15 @@ export const ProductsProvider = ({ children }: { children: ReactNode }) => {
         '7c94008e-5822-481a-b0f3-7768387c8a50',
         '5cbb73d1-c3eb-45e6-a835-94a4c489d706'
       ];
-      
-      await supabase
+
+      const { error: hideError } = await supabase
         .from('products')
         .update({ is_active: false })
-        .in('id', productIds)
-        .catch(() => {
-          // Silencioso se falhar
-        });
+        .in('id', productIds);
+
+      if (hideError) {
+        console.error('Falha ao ocultar produtos de teste no Supabase:', hideError);
+      }
 
       const { data, error } = await supabase
         .from('products')
@@ -107,8 +117,35 @@ export const ProductsProvider = ({ children }: { children: ReactNode }) => {
         return;
       }
 
-      setDynamicProducts((data ?? []).map(mapServerProduct));
-      console.log(`🔁 Carregados ${(data ?? []).length} produtos do Supabase`);
+      const sellerIds = Array.from(
+        new Set((data ?? []).map((row) => row.seller_id))
+      );
+
+      const { data: profileData, error: profileError } = sellerIds.length
+        ? await supabase
+            .from('profiles')
+            .select('user_id, store_name, name')
+            .in('user_id', sellerIds)
+        : { data: [], error: null };
+
+      if (profileError) {
+        console.error('Falha ao carregar perfis de vendedores do Supabase:', profileError);
+      }
+
+      const profileMap = new Map(
+        (profileData ?? []).map((profile) => [
+          profile.user_id,
+          profile.store_name || `Loja de ${profile.name || 'Vendedor'}`,
+        ])
+      );
+
+      const loadedProducts = (data ?? []).map((row) =>
+        mapServerProduct(row, profileMap.get(row.seller_id))
+      );
+      const visibleProducts = filterHiddenProducts(loadedProducts);
+
+      setDynamicProducts(visibleProducts);
+      console.log(`🔁 Carregados ${visibleProducts.length} produtos visíveis do Supabase`);
     } catch (error) {
       console.error('Falha ao carregar produtos do Supabase:', error);
     } finally {
@@ -117,20 +154,22 @@ export const ProductsProvider = ({ children }: { children: ReactNode }) => {
   };
 
   // Inicializar mockados no contexto (sem duplicação)
-  const mockProductsWithFlag = (mockProducts as any[]).map((p) => ({
-    ...p,
-    isDynamic: false,
-  })) as Product[];
+  const mockProductsWithFlag = filterHiddenProducts(
+    (mockProducts as any[]).map((p) => ({
+      ...p,
+      isDynamic: false,
+    }))
+  ) as Product[];
 
   // ==========================================
   // 📝 OPERAÇÕES SOBRE PRODUTOS
   // ==========================================
 
-  const addProduct = async (product: DynamicProduct): Promise<boolean> => {
+  const addProduct = async (product: DynamicProduct): Promise<DynamicProduct | null> => {
     // Validar produto
     if (!product.id || !product.name || !product.storeId || !product.sellerId) {
       console.error('Produto inválido ou sem sellerId:', product);
-      return false;
+      return null;
     }
 
     // Verificar duplicação de ID
@@ -139,14 +178,13 @@ export const ProductsProvider = ({ children }: { children: ReactNode }) => {
       mockProductsWithFlag.some((p) => p.id === product.id)
     ) {
       console.error('Produto com ID duplicado:', product.id);
-      return false;
+      return null;
     }
 
     try {
       const { data, error } = await supabase
         .from('products')
         .insert({
-          id: String(product.id),
           name: product.name,
           description: product.description || null,
           price: product.price,
@@ -159,18 +197,27 @@ export const ProductsProvider = ({ children }: { children: ReactNode }) => {
         .select()
         .single();
 
-      if (error || !data) {
+      if (error) {
         console.error('Erro ao adicionar produto no Supabase:', error);
-        return false;
+        return null;
+      }
+
+      if (!data) {
+        console.error('Erro ao adicionar produto no Supabase: nenhum dado retornado');
+        return null;
       }
 
       const saved = mapServerProduct(data);
-      setDynamicProducts((prev) => [...prev, saved]);
+      if (!isHiddenProduct(saved.name)) {
+        setDynamicProducts((prev) => [...prev, saved]);
+      } else {
+        console.log(`🔒 Produto oculto não adicionado ao estado: ${saved.name}`);
+      }
       console.log(`✅ Produto adicionado: ${saved.name} (${saved.id})`);
-      return true;
+      return saved;
     } catch (error) {
       console.error('Erro ao adicionar produto no Supabase:', error);
-      return false;
+      return null;
     }
   };
 
@@ -212,9 +259,9 @@ export const ProductsProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const getStoreProducts = (storeId: string): Product[] => {
-    return [...mockProductsWithFlag, ...dynamicProducts].filter(
-      (p) => p.storeId === storeId
-    );
+    return [...mockProductsWithFlag, ...dynamicProducts]
+      .filter((p) => p.storeId === storeId)
+      .filter((p) => !isHiddenProduct(p.name));
   };
 
   const clearDynamicProducts = () => {
@@ -226,9 +273,9 @@ export const ProductsProvider = ({ children }: { children: ReactNode }) => {
   // 🔄 COMBINAR PRODUTOS
   // ==========================================
 
-  const allProducts: Product[] = [...mockProductsWithFlag, ...dynamicProducts].filter(
-    (p, index, self) => index === self.findIndex((x) => x.id === p.id)
-  );
+  const allProducts: Product[] = [...mockProductsWithFlag, ...dynamicProducts]
+    .filter((p) => !isHiddenProduct(p.name))
+    .filter((p, index, self) => index === self.findIndex((x) => x.id === p.id));
 
   useEffect(() => {
     try {
@@ -238,6 +285,34 @@ export const ProductsProvider = ({ children }: { children: ReactNode }) => {
     }
 
     loadServerProducts();
+
+    const channel = supabase
+      .channel('products-realtime')
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'products' },
+        (payload) => {
+          if (!payload.new) {
+            return;
+          }
+
+          const newProduct = mapServerProduct(payload.new as Database['public']['Tables']['products']['Row']);
+          if (isHiddenProduct(newProduct.name)) {
+            return;
+          }
+
+          setDynamicProducts((prev) => {
+            const exists = prev.find((p) => p.id === newProduct.id);
+            if (exists) return prev;
+            return [newProduct, ...prev];
+          });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
