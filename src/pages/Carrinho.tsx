@@ -45,6 +45,7 @@ const Carrinho = () => {
   const [paymentRequest, setPaymentRequest] = useState<PaymentRequest | null>(null);
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
   const [purchaseRef, setPurchaseRef] = useState<string | null>(null);
+  const [firstReceiptUrl, setFirstReceiptUrl] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -132,6 +133,9 @@ const Carrinho = () => {
       with_gift_wrap: withGiftWrap,
     };
 
+    let firstInsertedId: string | null = null;
+    let firstInsertedToken: string | null = null;
+
     for (const item of items) {
       const itemFeeShare = fees.itemFee / items.length;
       const procFeeShare = fees.processingFee / items.length;
@@ -166,20 +170,41 @@ const Carrinho = () => {
         ...itemNewFields,
       };
 
-      const { error } = await supabase.from("purchases").insert(fullInsert);
+      const { data: insertedRow, error } = await supabase
+        .from("purchases")
+        .insert(fullInsert)
+        .select("id, secure_token")
+        .single();
+
       if (error) {
         console.error("Erro ao guardar compra (tentar sem campos novos):", error);
-        const { error: fallbackError } = await supabase.from("purchases").insert({
-          ...coreFields,
-          product_name: item.product.name,
-          product_price: item.product.price,
-          store_name: item.product.storeName,
-          store_id: item.product.storeId,
-          product_id: item.product.id,
-          product_image: item.product.images[0],
-        });
-        if (fallbackError) console.error("Erro no fallback:", fallbackError);
+        const { data: fallbackRow, error: fallbackError } = await supabase
+          .from("purchases")
+          .insert({
+            ...coreFields,
+            product_name: item.product.name,
+            product_price: item.product.price,
+            store_name: item.product.storeName,
+            store_id: item.product.storeId,
+            product_id: item.product.id,
+            product_image: item.product.images[0],
+          })
+          .select("id, secure_token")
+          .single();
+        if (fallbackError) {
+          console.error("Erro no fallback:", fallbackError);
+        } else if (fallbackRow && !firstInsertedId) {
+          firstInsertedId = fallbackRow.id;
+          firstInsertedToken = fallbackRow.secure_token;
+        }
+      } else if (insertedRow && !firstInsertedId) {
+        firstInsertedId = insertedRow.id;
+        firstInsertedToken = insertedRow.secure_token;
       }
+    }
+
+    if (firstInsertedId && firstInsertedToken) {
+      setFirstReceiptUrl(`/comprovativo/${firstInsertedId}?token=${firstInsertedToken}`);
     }
 
     try {
@@ -200,10 +225,12 @@ const Carrinho = () => {
     }
 
     setIsPaymentModalOpen(false);
-    setShowCheckoutModal(false);
+
     toast({
       title: "Compra concluída com sucesso!",
-      description: "Podes descarregar o teu comprovativo no histórico de compras.",
+      description: firstReceiptUrl
+        ? "Podes ver o teu comprovativo agora."
+        : "Podes descarregar o teu comprovativo no histórico de compras.",
     });
   };
 
@@ -414,14 +441,39 @@ const Carrinho = () => {
             </div>
 
             <div className="flex-shrink-0 px-5 pb-5 pt-4 border-t border-gray-100 bg-white">
-              <Button
-                variant="hero"
-                className="w-full"
-                disabled={!selectedPaymentMethod || !buyerName.trim()}
-                onClick={handleConfirmPayment}
-              >
-                Confirmar e Pagar
-              </Button>
+              {firstReceiptUrl ? (
+                <div className="space-y-2">
+                  <p className="text-sm text-green-600 font-medium text-center">
+                    ✓ Compra realizada com sucesso!
+                  </p>
+                  <Button
+                    variant="hero"
+                    className="w-full"
+                    onClick={() => navigate(firstReceiptUrl)}
+                  >
+                    Ver Comprovativo
+                  </Button>
+                  <Button
+                    variant="outline"
+                    className="w-full"
+                    onClick={() => {
+                      setShowCheckoutModal(false);
+                      setFirstReceiptUrl(null);
+                    }}
+                  >
+                    Fechar
+                  </Button>
+                </div>
+              ) : (
+                <Button
+                  variant="hero"
+                  className="w-full"
+                  disabled={!selectedPaymentMethod || !buyerName.trim()}
+                  onClick={handleConfirmPayment}
+                >
+                  Confirmar e Pagar
+                </Button>
+              )}
             </div>
           </div>
         </DialogContent>

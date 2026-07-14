@@ -46,6 +46,7 @@ const ProductDetails = () => {
   const [fees, setFees] = useState<FeeBreakdownType | null>(null);
   const [paymentRequest, setPaymentRequest] = useState<PaymentRequest | null>(null);
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
+  const [receiptUrl, setReceiptUrl] = useState<string | null>(null);
 
   const { allProducts } = useProducts();
   const product = allProducts.find(p => String(p.id) === String(id));
@@ -207,33 +208,50 @@ const ProductDetails = () => {
         with_gift_wrap: withGiftWrap,
       };
 
-      const { error: insertError } = await supabase.from("purchases").insert({
-        ...insertPayload,
-        ...newFields,
-      });
+      let insertedId = numericRef;
+      let insertedToken: string | null = null;
+
+      const { data: insertedRow, error: insertError } = await supabase
+        .from("purchases")
+        .insert({ ...insertPayload, ...newFields })
+        .select("id, secure_token")
+        .single();
 
       if (insertError) {
         console.error("Erro ao guardar compra no Supabase (pode ser migration em falta):", insertError);
-        const { error: fallbackError } = await supabase.from("purchases").insert(insertPayload);
+        const { data: fallbackRow, error: fallbackError } = await supabase
+          .from("purchases")
+          .insert(insertPayload)
+          .select("id, secure_token")
+          .single();
         if (fallbackError) {
           console.error("Erro tambem no fallback:", fallbackError);
+        } else if (fallbackRow) {
+          insertedId = fallbackRow.id;
+          insertedToken = fallbackRow.secure_token;
         }
+      } else if (insertedRow) {
+        insertedId = insertedRow.id;
+        insertedToken = insertedRow.secure_token;
       }
+
+      const url = `/comprovativo/${insertedId}?token=${insertedToken}`;
+      setReceiptUrl(url);
 
       try {
         const purchases = JSON.parse(localStorage.getItem('hoji_purchases') || '[]');
-        purchases.push(purchase);
+        purchases.push({ ...purchase, id: insertedId, secure_token: insertedToken });
         localStorage.setItem('hoji_purchases', JSON.stringify(purchases));
         window.dispatchEvent(new CustomEvent("hoji-purchase-completed"));
       } catch (e) {
         console.error('Erro ao guardar compra em localStorage:', e);
       }
 
-      setPurchaseData(purchase);
+      setPurchaseData({ ...purchase, id: insertedId, secure_token: insertedToken });
 
       toast({
         title: "Compra concluída com sucesso!",
-        description: `Referência: ${numericRef}. Podes descarregar o teu comprovativo.`,
+        description: `Referência: ${insertedId}. O teu comprovativo está pronto.`,
       });
     } catch (error) {
       console.error('Erro ao registar compra:', error);
@@ -721,12 +739,21 @@ const ProductDetails = () => {
                   <p className="text-sm text-green-600 font-medium text-center">
                     ✓ Compra registada! Referência: {purchaseData.id}
                   </p>
+                  {receiptUrl && (
+                    <Button
+                      variant="hero"
+                      className="w-full"
+                      onClick={() => navigate(receiptUrl)}
+                    >
+                      Ver Comprovativo
+                    </Button>
+                  )}
                   <Button
                     variant="hero"
                     className="w-full bg-green-600 hover:bg-green-700"
                     onClick={handleGenerateReceipt}
                   >
-                    📄 Gerar PDF
+                    Descarregar PDF
                   </Button>
                   <Button
                     variant="outline"
