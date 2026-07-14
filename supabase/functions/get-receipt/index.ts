@@ -50,7 +50,7 @@ Deno.serve(async (req) => {
     // Fetch purchase with matching ID AND token
     const { data: purchase, error } = await supabase
       .from('purchases')
-      .select('id, buyer_id, buyer_name, buyer_phone, product_id, product_name, product_price, store_id, store_name, product_image, status, created_at, validated_at, expires_at')
+      .select('id, buyer_id, buyer_name, buyer_phone, product_id, product_name, product_price, store_id, store_name, product_image, status, created_at, validated_at, expires_at, item_fee, processing_fee, delivery_fee, urgent_fee, small_order_fee, packaging_fee, gift_wrap_fee, platform_revenue, seller_receives, buyer_total, payment_method, transaction_id, payment_status, paid_at, delivery_zone, is_urgent, with_packaging, with_gift_wrap')
       .eq('id', purchaseId)
       .eq('secure_token', token)
       .maybeSingle();

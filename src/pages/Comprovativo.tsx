@@ -23,6 +23,24 @@ interface Purchase {
   created_at: string;
   validated_at: string | null;
   buyer_id: string | null;
+  item_fee?: number;
+  processing_fee?: number;
+  delivery_fee?: number;
+  urgent_fee?: number;
+  small_order_fee?: number;
+  packaging_fee?: number;
+  gift_wrap_fee?: number;
+  platform_revenue?: number;
+  seller_receives?: number;
+  buyer_total?: number;
+  payment_method?: string;
+  transaction_id?: string;
+  payment_status?: string;
+  paid_at?: string;
+  delivery_zone?: string | null;
+  is_urgent?: boolean;
+  with_packaging?: boolean;
+  with_gift_wrap?: boolean;
 }
 
 const Comprovativo = () => {
@@ -304,8 +322,60 @@ const Comprovativo = () => {
                 </table>
               </div>
 
+              {/* Fee Breakdown */}
+              {purchase.buyer_total != null && purchase.buyer_total > 0 && (
+                <div className="mt-4 border border-border rounded-lg overflow-hidden">
+                  <table className="w-full">
+                    <tbody>
+                      <tr className="border-b border-border">
+                        <td className="px-4 py-2 bg-muted/50 font-medium text-xs text-muted-foreground">Subtotal</td>
+                        <td className="px-4 py-2 font-semibold text-sm">{formatPrice(purchase.product_price)} Kz</td>
+                      </tr>
+                      {purchase.item_fee != null && purchase.item_fee > 0 && (
+                        <tr className="border-b border-border">
+                          <td className="px-4 py-2 bg-muted/50 font-medium text-xs text-muted-foreground">Taxa de plataforma</td>
+                          <td className="px-4 py-2 text-sm">{formatPrice(purchase.item_fee + (purchase.processing_fee ?? 0))} Kz</td>
+                        </tr>
+                      )}
+                      {purchase.delivery_fee != null && purchase.delivery_fee > 0 && (
+                        <tr className="border-b border-border">
+                          <td className="px-4 py-2 bg-muted/50 font-medium text-xs text-muted-foreground">Taxa de entrega</td>
+                          <td className="px-4 py-2 text-sm">{formatPrice(purchase.delivery_fee)} Kz</td>
+                        </tr>
+                      )}
+                      <tr className="bg-accent/10">
+                        <td className="px-4 py-3 font-bold text-sm">Total pago</td>
+                        <td className="px-4 py-3 font-bold text-accent">{formatPrice(purchase.buyer_total)} Kz</td>
+                      </tr>
+                      {purchase.payment_method && (
+                        <tr className="border-t border-border">
+                          <td className="px-4 py-2 bg-muted/50 font-medium text-xs text-muted-foreground">Método de pagamento</td>
+                          <td className="px-4 py-2 text-sm font-medium">
+                            {purchase.payment_method === 'multicaixa_express' ? 'Multicaixa Express' :
+                             purchase.payment_method === 'unitel_money' ? 'Unitel Money' :
+                             purchase.payment_method === 'bank_transfer' ? 'Transferência Bancária' :
+                             purchase.payment_method}
+                          </td>
+                        </tr>
+                      )}
+                      {purchase.transaction_id && (
+                        <tr className="border-b border-border">
+                          <td className="px-4 py-2 bg-muted/50 font-medium text-xs text-muted-foreground">ID de transacção</td>
+                          <td className="px-4 py-2 text-xs font-mono">{purchase.transaction_id}</td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                  {purchase.seller_receives != null && (
+                    <div className="px-4 py-2 text-xs text-muted-foreground text-center border-t border-border">
+                      Valor recebido pelo vendedor: {formatPrice(purchase.seller_receives)} Kz
+                    </div>
+                  )}
+                </div>
+              )}
+
               {/* Success Message */}
-              <div className="mt-6 text-center p-4 bg-accent/10 rounded-lg border border-accent/20">
+              <div className="mt-4 text-center p-4 bg-accent/10 rounded-lg border border-accent/20">
                 <p className="text-lg font-bold text-accent">
                   Compra Com Sucesso!
                 </p>

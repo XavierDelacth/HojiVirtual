@@ -1,6 +1,3 @@
-
-
-
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Star, MapPin, BadgeCheck, ArrowLeft, MessageCircle, ShoppingBag, Copy, CheckCircle2 } from "lucide-react";
@@ -9,6 +6,8 @@ import Footer from "@/components/layout/Footer";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { stores, reviews, paymentMethods } from "@/data/mockData";
 import { resolveBankData } from '@/lib/resolveBankData';
@@ -16,6 +15,17 @@ import { useProducts } from "@/hooks/useProducts";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import AddToCartButton from "@/components/products/AddToCartButton";
+import {
+  DeliveryZone,
+  FeeBreakdown as FeeBreakdownType,
+  calculateFees,
+  formatKz,
+} from "@/lib/feeEngine";
+import { PaymentMethod, PaymentRequest } from "@/lib/paymentSimulator";
+import FeeBreakdown from "@/components/checkout/FeeBreakdown";
+import DeliveryOptions from "@/components/checkout/DeliveryOptions";
+import PaymentMethodSelector from "@/components/checkout/PaymentMethodSelector";
+import PaymentStatusModal from "@/components/checkout/PaymentStatusModal";
 
 const ProductDetails = () => {
   const { id } = useParams();
@@ -25,6 +35,17 @@ const ProductDetails = () => {
   const [purchaseData, setPurchaseData] = useState<any | null>(null);
   const [isCreatingPurchase, setIsCreatingPurchase] = useState(false);
   const [copiedIBAN, setCopiedIBAN] = useState(false);
+  const [buyerName, setBuyerName] = useState("");
+
+  const [deliveryZone, setDeliveryZone] = useState<DeliveryZone | undefined>(undefined);
+  const [isUrgent, setIsUrgent] = useState(false);
+  const [withPackaging, setWithPackaging] = useState(false);
+  const [withGiftWrap, setWithGiftWrap] = useState(false);
+  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<PaymentMethod | undefined>(undefined);
+  const [payerPhone, setPayerPhone] = useState("");
+  const [fees, setFees] = useState<FeeBreakdownType | null>(null);
+  const [paymentRequest, setPaymentRequest] = useState<PaymentRequest | null>(null);
+  const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
 
   const { allProducts } = useProducts();
   const product = allProducts.find(p => String(p.id) === String(id));
@@ -50,6 +71,23 @@ const ProductDetails = () => {
       mounted = false;
     };
   }, [product]);
+
+  useEffect(() => {
+    const fetchUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user?.email) {
+        setBuyerName(user.email.split('@')[0]);
+      }
+    };
+    fetchUser();
+  }, []);
+
+  useEffect(() => {
+    if (!product) return;
+    const subtotal = product.price;
+    setFees(calculateFees({ subtotal, itemCount: 1, deliveryZone, isUrgent, withPackaging, withGiftWrap }));
+  }, [product, deliveryZone, isUrgent, withPackaging, withGiftWrap]);
+
   const productReviews = reviews.filter(r => r.productId === id);
 
   const formatPrice = (price: number) => {
@@ -70,35 +108,43 @@ const ProductDetails = () => {
     });
   };
 
-  const handlePurchase = async () => {
-    if (!product || !storeData) return;
-
-    // Bloquear compra caso vendedor não tenha IBAN configurado
-    if (!storeData.iban) {
+  const handleConfirmPayment = () => {
+    if (!selectedPaymentMethod || !fees || !product) return;
+    if (!buyerName.trim()) {
       toast({
-        title: 'Dados bancários em falta',
-        description: 'O vendedor ainda não configurou o IBAN. Não é possível concluir a compra.',
-        variant: 'destructive',
+        title: "Nome obrigatório",
+        description: "Por favor, insere o teu nome.",
+        variant: "destructive",
       });
       return;
     }
+    setPaymentRequest({
+      purchaseId: `PROD-${Date.now()}`,
+      amount: fees.buyerTotal,
+      method: selectedPaymentMethod,
+      phone: payerPhone || undefined,
+    });
+    setIsPaymentModalOpen(true);
+  };
+
+  const handlePaymentSuccess = async (transactionId: string) => {
+    if (!product || !storeData || !fees || !selectedPaymentMethod) return;
 
     setIsCreatingPurchase(true);
 
     try {
-      let user: any = null;
-      const { data: { user: supabaseUser } } = await supabase.auth.getUser();
-      
-      if (supabaseUser) {
-        user = supabaseUser;
-      } else {
+      const { data: authData } = await supabase.auth.getUser();
+      const supabaseUser = authData?.user ?? null;
+      let user: any = supabaseUser;
+
+      if (!user) {
         const userEmail = localStorage.getItem("userEmail");
         const userName = localStorage.getItem("userName");
         if (userEmail && userName) {
           user = { id: userEmail, email: userEmail, name: userName };
         }
       }
-      
+
       if (!user) {
         toast({
           title: "Autenticação necessária",
@@ -110,41 +156,68 @@ const ProductDetails = () => {
       }
 
       const numericRef = generateNumericReference();
-      const buyerName = (user as any).name || user.email?.split('@')[0] || "Comprador";
 
       const purchase = {
         id: numericRef,
         product_id: product.id,
         product_name: product.name,
         product_price: product.price,
-        // Usar storeName do objeto resolvido (é o nome correto retornado de resolveBankData)
         store_name: storeData.storeName || storeData.name || product.storeName || "Loja não identificada",
         store_id: storeData.storeId || product.storeId,
         buyer_id: user.id,
         buyer_name: buyerName,
         product_image: product.images[0],
-        status: "pending",
+        status: "approved",
         iban: storeData.iban,
         bank: storeData.bank,
         seller_name: storeData.owner || storeData.storeName || storeData.name || "Vendedor",
         created_at: new Date().toISOString(),
       };
 
-      const { error: insertError } = await supabase.from("purchases").insert({
+      const insertPayload: Record<string, any> = {
         buyer_id: user.id,
         buyer_name: buyerName,
         product_name: product.name,
         product_price: product.price,
-        // Usar storeName do objeto resolvido (é o nome correto retornado de resolveBankData)
         store_name: storeData.storeName || storeData.name || product.storeName || "Loja não identificada",
         store_id: storeData.storeId || product.storeId,
         product_id: product.id,
         product_image: product.images[0],
-        status: "pending",
+        status: "approved",
+      };
+
+      const newFields: Record<string, any> = {
+        item_fee: fees.itemFee,
+        processing_fee: fees.processingFee,
+        delivery_fee: deliveryZone ? fees.deliveryFee : 0,
+        urgent_fee: isUrgent ? fees.urgentFee : 0,
+        small_order_fee: fees.smallOrderFee,
+        packaging_fee: withPackaging ? fees.packagingFee : 0,
+        gift_wrap_fee: withGiftWrap ? fees.giftWrapFee : 0,
+        platform_revenue: fees.platformRevenue,
+        seller_receives: fees.sellerReceives,
+        buyer_total: fees.buyerTotal,
+        payment_method: selectedPaymentMethod,
+        transaction_id: transactionId,
+        payment_status: "approved",
+        paid_at: new Date().toISOString(),
+        delivery_zone: deliveryZone ?? null,
+        is_urgent: isUrgent,
+        with_packaging: withPackaging,
+        with_gift_wrap: withGiftWrap,
+      };
+
+      const { error: insertError } = await supabase.from("purchases").insert({
+        ...insertPayload,
+        ...newFields,
       });
 
       if (insertError) {
-        console.error("Erro ao guardar compra no Supabase:", insertError);
+        console.error("Erro ao guardar compra no Supabase (pode ser migration em falta):", insertError);
+        const { error: fallbackError } = await supabase.from("purchases").insert(insertPayload);
+        if (fallbackError) {
+          console.error("Erro tambem no fallback:", fallbackError);
+        }
       }
 
       try {
@@ -159,8 +232,8 @@ const ProductDetails = () => {
       setPurchaseData(purchase);
 
       toast({
-        title: "Compra registada!",
-        description: `Referência: ${numericRef}. Clique em 'Gerar Comprovativo' para detalhes.`,
+        title: "Compra concluída com sucesso!",
+        description: `Referência: ${numericRef}. Podes descarregar o teu comprovativo.`,
       });
     } catch (error) {
       console.error('Erro ao registar compra:', error);
@@ -171,12 +244,21 @@ const ProductDetails = () => {
       });
     } finally {
       setIsCreatingPurchase(false);
+      setIsPaymentModalOpen(false);
     }
+  };
+
+  const handlePaymentFailure = (reason: string) => {
+    toast({
+      title: "Pagamento falhado",
+      description: reason,
+      variant: "destructive",
+    });
   };
 
   const handleGenerateReceipt = async () => {
     if (!purchaseData) return;
-    // Ensure this purchase is saved so it appears in DashboardComprovativos
+
     try {
       const existing = JSON.parse(localStorage.getItem('hoji_purchases') || '[]');
       if (!existing.find((p: any) => p.id === purchaseData.id)) {
@@ -304,7 +386,7 @@ const ProductDetails = () => {
       const imgWidth = 200;
       const imgHeight = (canvas.height * imgWidth) / canvas.width;
       const pdf = new jsPDF('p', 'mm', 'a4');
-      
+
       const imgData = canvas.toDataURL('image/png');
       pdf.addImage(imgData, 'PNG', 5, 5, imgWidth, imgHeight);
       pdf.save(`comprovativo_${purchaseData.id}.pdf`);
@@ -523,141 +605,150 @@ const ProductDetails = () => {
       </main>
 
       <Dialog open={showPurchaseModal} onOpenChange={setShowPurchaseModal}>
-        {/* max-height para nunca ultrapassar 90% da altura do ecrã e overflow dentro do modal */}
-      <DialogContent className="h-[90vh] max-h-[90vh] overflow-hidden w-full max-w-md mx-4 sm:mx-0">
-        <div className="flex h-full min-h-0 flex-col">
-          <DialogHeader className="sticky top-0 z-10 flex-shrink-0 px-5 pt-5 bg-white">
-            <DialogTitle className="text-center">Confirmar Compra</DialogTitle>
-            <DialogDescription className="text-center">
-              Efetue a transferência para a conta abaixo
-            </DialogDescription>
-          </DialogHeader>
+        <DialogContent className="h-[90vh] max-h-[90vh] overflow-hidden w-full max-w-md mx-4 sm:mx-0">
+          <div className="flex h-full min-h-0 flex-col">
+            <DialogHeader className="sticky top-0 z-10 flex-shrink-0 px-5 pt-5 bg-white">
+              <DialogTitle className="text-center">Confirmar Compra</DialogTitle>
+              <DialogDescription className="text-center">
+                Escolhe as opções de entrega e método de pagamento
+              </DialogDescription>
+            </DialogHeader>
 
-          <div className="flex-1 min-h-0 overflow-y-auto px-5 py-4 space-y-6">
-            <div className="flex items-center gap-4 p-4 bg-muted/50 rounded-xl">
-              <img
-                src={product?.images[0]}
-                alt={product?.name}
-                className="w-16 h-16 rounded-lg object-cover"
-              />
-              <div className="flex-1">
-                <h4 className="font-medium text-sm">{product?.name}</h4>
-                {/* Mostrar nome da loja resolvida ou fallback */}
-                <p className="text-xs text-muted-foreground">{storeData?.storeName || product?.storeName || "Loja"}</p>
-                <p className="text-primary font-bold mt-1">
-                  {product && formatPrice(product.price)} Kz
-                </p>
-              </div>
-            </div>
-
-            {storeData && (
-              <div className="space-y-4 bg-primary/5 p-4 rounded-xl border border-primary/20">
-                <h3 className="font-semibold text-base">Dados Bancários do Vendedor</h3>
-                
-                <div>
-                  <p className="text-xs text-muted-foreground mb-1">Titular da Conta</p>
-                  {/* Usar owner ou fallback para storeName se owner não existir */}
-                  <p className="font-medium">{storeData.owner || storeData.storeName || "Vendedor não identificado"}</p>
-                </div>
-
-                {(storeData as any).bank && (
-                  <div>
-                    <p className="text-xs text-muted-foreground mb-1">Banco</p>
-                    <p className="font-medium">{(storeData as any).bank}</p>
-                  </div>
-                )}
-
-                {(storeData as any).iban && (
-                  <div>
-                    <p className="text-xs text-muted-foreground mb-2">IBAN</p>
-                    <div className="flex items-center gap-2 bg-background p-3 rounded-lg border border-border">
-                      <code className="font-mono text-sm font-bold flex-1 break-all">
-                        {(storeData as any).iban}
-                      </code>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={() => copyToClipboard((storeData as any).iban!)}
-                        className="flex-shrink-0"
-                      >
-                        {copiedIBAN ? (
-                          <CheckCircle2 className="w-4 h-4 text-green-500" />
-                        ) : (
-                          <Copy className="w-4 h-4" />
-                        )}
-                      </Button>
-                    </div>
-                  </div>
-                )}
-
-                <div className="bg-background p-3 rounded-lg border border-primary/30">
-                  <p className="text-xs text-muted-foreground mb-1">Valor a Transferir</p>
-                  <p className="text-lg font-bold text-primary">
+            <div className="flex-1 min-h-0 overflow-y-auto px-5 py-4 space-y-5">
+              <div className="flex items-center gap-4 p-4 bg-muted/50 rounded-xl">
+                <img
+                  src={product?.images[0]}
+                  alt={product?.name}
+                  className="w-16 h-16 rounded-lg object-cover"
+                />
+                <div className="flex-1">
+                  <h4 className="font-medium text-sm">{product?.name}</h4>
+                  <p className="text-xs text-muted-foreground">{storeData?.storeName || product?.storeName || "Loja"}</p>
+                  <p className="text-primary font-bold mt-1">
                     {product && formatPrice(product.price)} Kz
                   </p>
                 </div>
               </div>
-            )}
 
-            <div className="space-y-2 text-sm">
-              <p className="font-medium">Como proceder:</p>
-              <div className="space-y-2">
-                <div className="flex items-start gap-3">
-                  <span className="w-6 h-6 rounded-full bg-primary/10 text-primary flex items-center justify-center text-xs font-bold flex-shrink-0">1</span>
-                  <span>Copie o IBAN do vendedor</span>
-                </div>
-                <div className="flex items-start gap-3">
-                  <span className="w-6 h-6 rounded-full bg-primary/10 text-primary flex items-center justify-center text-xs font-bold flex-shrink-0">2</span>
-                  <span>Aceda à sua aplicação de banco</span>
-                </div>
-                <div className="flex items-start gap-3">
-                  <span className="w-6 h-6 rounded-full bg-primary/10 text-primary flex items-center justify-center text-xs font-bold flex-shrink-0">3</span>
-                  <span>Efetue a transferência do valor indicado</span>
-                </div>
-                <div className="flex items-start gap-3">
-                  <span className="w-6 h-6 rounded-full bg-primary/10 text-primary flex items-center justify-center text-xs font-bold flex-shrink-0">4</span>
-                  <span>Clique em "Comprar" para confirmar</span>
-                </div>
+              <div>
+                <Label htmlFor="buyerName" className="text-sm font-medium">
+                  O teu nome
+                </Label>
+                <Input
+                  id="buyerName"
+                  value={buyerName}
+                  onChange={(e) => setBuyerName(e.target.value)}
+                  placeholder="O teu nome"
+                  className="mt-1"
+                />
               </div>
+
+              <DeliveryOptions
+                selectedZone={deliveryZone}
+                onZoneChange={setDeliveryZone}
+                isUrgent={isUrgent}
+                onUrgentChange={setIsUrgent}
+                withPackaging={withPackaging}
+                onPackagingChange={setWithPackaging}
+                withGiftWrap={withGiftWrap}
+                onGiftWrapChange={setWithGiftWrap}
+              />
+
+              {fees && <FeeBreakdown fees={fees} />}
+
+              <PaymentMethodSelector
+                selected={selectedPaymentMethod}
+                onSelect={setSelectedPaymentMethod}
+                phone={payerPhone}
+                onPhoneChange={setPayerPhone}
+              />
+
+              {storeData && (
+                <div className="space-y-4 bg-primary/5 p-4 rounded-xl border border-primary/20">
+                  <h3 className="font-semibold text-base">Dados Bancários do Vendedor</h3>
+                  
+                  <div>
+                    <p className="text-xs text-muted-foreground mb-1">Titular da Conta</p>
+                    <p className="font-medium">{storeData.owner || storeData.storeName || "Vendedor não identificado"}</p>
+                  </div>
+
+                  {(storeData as any).bank && (
+                    <div>
+                      <p className="text-xs text-muted-foreground mb-1">Banco</p>
+                      <p className="font-medium">{(storeData as any).bank}</p>
+                    </div>
+                  )}
+
+                  {(storeData as any).iban && (
+                    <div>
+                      <p className="text-xs text-muted-foreground mb-2">IBAN</p>
+                      <div className="flex items-center gap-2 bg-background p-3 rounded-lg border border-border">
+                        <code className="font-mono text-sm font-bold flex-1 break-all">
+                          {(storeData as any).iban}
+                        </code>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => copyToClipboard((storeData as any).iban!)}
+                          className="flex-shrink-0"
+                        >
+                          {copiedIBAN ? (
+                            <CheckCircle2 className="w-4 h-4 text-green-500" />
+                          ) : (
+                            <Copy className="w-4 h-4" />
+                          )}
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+
+            <div className="flex-shrink-0 px-5 pb-5 pt-4 border-t border-gray-100 bg-white space-y-3">
+              <Button
+                variant="hero"
+                className="w-full"
+                disabled={!selectedPaymentMethod || !buyerName.trim()}
+                onClick={handleConfirmPayment}
+              >
+                Confirmar e Pagar
+              </Button>
+
+              {purchaseData && (
+                <div className="space-y-2">
+                  <p className="text-sm text-green-600 font-medium text-center">
+                    ✓ Compra registada! Referência: {purchaseData.id}
+                  </p>
+                  <Button
+                    variant="hero"
+                    className="w-full bg-green-600 hover:bg-green-700"
+                    onClick={handleGenerateReceipt}
+                  >
+                    📄 Gerar PDF
+                  </Button>
+                  <Button
+                    variant="outline"
+                    className="w-full"
+                    onClick={() => setShowPurchaseModal(false)}
+                  >
+                    Fechar
+                  </Button>
+                </div>
+              )}
             </div>
           </div>
-
-          <div className="flex-shrink-0 px-5 pb-5 pt-4 border-t border-gray-100 bg-white space-y-3">
-            <Button 
-              variant="hero" 
-              className="w-full" 
-              onClick={handlePurchase}
-              disabled={isCreatingPurchase}
-            >
-              {isCreatingPurchase ? "Processando..." : "Comprar"}
-            </Button>
-
-            {purchaseData && (
-              <div className="space-y-2">
-                <p className="text-sm text-green-600 font-medium text-center">
-                  ✓ Compra registada! Referência: {purchaseData.id}
-                </p>
-                <Button 
-                  variant="hero" 
-                  className="w-full bg-green-600 hover:bg-green-700"
-                  onClick={handleGenerateReceipt}
-                >
-                  📄 Gerar PDF
-                </Button>
-                <Button 
-                  variant="outline" 
-                  className="w-full"
-                  onClick={() => setShowPurchaseModal(false)}
-                >
-                  Fechar
-                </Button>
-              </div>
-            )}
-          </div>
-        </div>
-      </DialogContent>
+        </DialogContent>
       </Dialog>
+
+      <PaymentStatusModal
+        isOpen={isPaymentModalOpen}
+        paymentRequest={paymentRequest}
+        onSuccess={handlePaymentSuccess}
+        onFailure={handlePaymentFailure}
+        onClose={() => setIsPaymentModalOpen(false)}
+      />
 
       <Footer />
     </div>

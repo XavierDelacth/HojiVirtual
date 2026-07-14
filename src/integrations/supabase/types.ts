@@ -132,6 +132,7 @@ export type Database = {
           buyer_phone: string | null
           created_at: string
           expires_at: string
+          gift_wrap_fee: number | null
           id: string
           product_id: string
           product_image: string | null
@@ -142,6 +143,7 @@ export type Database = {
           store_id: string | null
           store_name: string
           validated_at: string | null
+          with_gift_wrap: boolean | null
         }
         Insert: {
           buyer_id?: string | null
@@ -149,6 +151,7 @@ export type Database = {
           buyer_phone?: string | null
           created_at?: string
           expires_at?: string
+          gift_wrap_fee?: number | null
           id?: string
           product_id: string
           product_image?: string | null
@@ -159,6 +162,7 @@ export type Database = {
           store_id?: string | null
           store_name: string
           validated_at?: string | null
+          with_gift_wrap?: boolean | null
         }
         Update: {
           buyer_id?: string | null
@@ -166,6 +170,7 @@ export type Database = {
           buyer_phone?: string | null
           created_at?: string
           expires_at?: string
+          gift_wrap_fee?: number | null
           id?: string
           product_id?: string
           product_image?: string | null
@@ -176,6 +181,7 @@ export type Database = {
           store_id?: string | null
           store_name?: string
           validated_at?: string | null
+          with_gift_wrap?: boolean | null
         }
         Relationships: []
       }
